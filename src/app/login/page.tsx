@@ -26,16 +26,37 @@ export default function LoginPage() {
     setIsLoading(true);
     setError(null);
 
-    await new Promise((resolve) => setTimeout(resolve, 1000));
+    try {
+      const response = await fetch('/api/account/login', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ email, password }),
+      });
 
-    if (email === "admin@example.com" && password === "password") {
-      console.log("Login successful!");
-      router.push("/");
-    } else {
-      setError("Invalid email or password. Please try again.");
+      const data = await response.json();
+
+      if (!response.ok) {
+        setError(data.error || 'Login failed');
+        return;
+      }
+
+      if (data.success) {
+        // Store user data in localStorage (you might want to use a state management solution)
+        // localStorage.setItem('user', JSON.stringify(data.user));
+        
+        console.log("Login successful!", data.user);
+        router.push("/");
+        window.location.href = "/";
+      }
+
+    } catch (err) {
+      console.error("Login error:", err);
+      setError("Network error. Please try again.");
+    } finally {
+      setIsLoading(false);
     }
-
-    setIsLoading(false);
   };
 
   return (
@@ -55,7 +76,7 @@ export default function LoginPage() {
                 <Input
                   id="email"
                   type="email"
-                  placeholder="m@example.com"
+                  placeholder="test@example.com"
                   required
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
@@ -75,6 +96,7 @@ export default function LoginPage() {
                 <Input
                   id="password"
                   type="password"
+                  placeholder="password123"
                   required
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
@@ -83,15 +105,25 @@ export default function LoginPage() {
               </div>
 
               {error && (
-                <p className="text-sm font-medium text-destructive">{error}</p>
+                <div className="text-red-600 text-sm bg-red-50 p-3 rounded-md border border-red-200">
+                  {error}
+                </div>
               )}
 
               <Button type="submit" className="w-full" disabled={isLoading}>
-                {isLoading}
-                Login
+                {isLoading ? "Signing in..." : "Login"}
               </Button>
             </div>
           </form>
+          
+          {/* Development helper */}
+          <div className="mt-4 p-3 bg-blue-50 rounded-md border border-blue-200">
+            <p className="text-sm text-blue-700">
+              <strong>Test credentials:</strong><br />
+              Email: test@example.com<br />
+              Password: password123
+            </p>
+          </div>
         </CardContent>
       </Card>
     </div>

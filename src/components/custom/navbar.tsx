@@ -34,13 +34,13 @@ export function Navbar() {
         } else {
           setUser(null);
           // placeholder
-          setUser({
-            firstName: "John",
-            lastName: "Doe",
-            email: "tes",
-            avatarUrl: "https://i.pravatar.cc/150?img=3",
-            initials: "JD",
-          });
+          // setUser({
+          //   firstName: "John",
+          //   lastName: "Doe",
+          //   email: "tes",
+          //   avatarUrl: "https://i.pravatar.cc/150?img=3",
+          //   initials: "JD",
+          // });
         }
       } catch (error) {
         console.error("Failed to fetch user:", error);
