@@ -10,7 +10,12 @@ export interface Permission {
 export const routePermissions: Permission[] = [
   { route: "/dashboard", allowedRoles: ["MANAGEMENT", "ADMIN", "HR", "LEGAL"] },
   { route: "/create", allowedRoles: ["ADMIN", "HR", "LEGAL"] },
-  { route: "/review", allowedRoles: ["MANAGEMENT", "ADMIN", "LEGAL"] },
+  {
+    route: "/contracts/{id}/review",
+    allowedRoles: ["MANAGEMENT", "ADMIN", "LEGAL"],
+  },
+  // NEW: edit halaman hanya MANAGEMENT + LEGAL
+  { route: "/contracts/{id}/edit", allowedRoles: ["MANAGEMENT", "LEGAL"] },
   { route: "/employment", allowedRoles: ["MANAGEMENT", "ADMIN", "HR"] },
   { route: "/draft", allowedRoles: ["MANAGEMENT", "ADMIN", "HR", "LEGAL"] },
   { route: "/profile", allowedRoles: ["MANAGEMENT", "ADMIN", "HR", "LEGAL"] },
@@ -23,16 +28,32 @@ export const routePermissions: Permission[] = [
  * @param route - The route to check access for
  * @returns boolean - Whether the user has access to the route
  */
+// Convert pattern with {param} segments to a RegExp
+function patternToRegex(pattern: string): RegExp {
+  // Escape regex chars except our parameter braces
+  const escaped = pattern
+    .replace(/[-/\\^$+?.()|[\]]/g, "\\$&")
+    .replace(/\\\{[^/]+?\\\}/g, "([^/]+)");
+  return new RegExp(`^${escaped}$`);
+}
+
+// Precompile regex for performance
+const compiledPermissions = routePermissions.map((p) => ({
+  ...p,
+  regex: patternToRegex(p.route),
+}));
+
 export function hasRouteAccess(
   userRole: UserRole | undefined,
-  route: string
+  routePath: string
 ): boolean {
   if (!userRole) return false;
-
-  const permission = routePermissions.find((p) => p.route === route);
-  if (!permission) return false;
-
-  return permission.allowedRoles.includes(userRole);
+  for (const perm of compiledPermissions) {
+    if (perm.regex.test(routePath)) {
+      return perm.allowedRoles.includes(userRole);
+    }
+  }
+  return false;
 }
 
 /**

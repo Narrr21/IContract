@@ -113,15 +113,74 @@ export async function sendExpiryNotifications() {
   return { totalNotified: count };
 }
 
+/**
+ * Automatically mark contracts as 'berakhir' if their detail tanggalakhir (or jatuhtempo fallback)
+ * is strictly before today AND current status not in ['berakhir', 'dihentikan'].
+ */
+export async function autoExpireContracts() {
+  const now = new Date();
+  let updated = 0;
+
+  // Partnership based expiry
+  const expPartnerships = await prisma.partnership.findMany({
+    where: {
+      tanggalakhir: { lt: now },
+      contract: { status: { notIn: ["berakhir", "dihentikan"] } },
+    },
+    select: { kontrakid: true },
+  });
+
+  if (expPartnerships.length > 0) {
+    const ids = expPartnerships.map((p) => p.kontrakid);
+    const res = await prisma.contract.updateMany({
+      where: { id: { in: ids }, status: { notIn: ["berakhir", "dihentikan"] } },
+      data: { status: "berakhir" },
+    });
+    updated += res.count;
+  }
+
+  // Employment based expiry
+  const expEmployments = await prisma.employment.findMany({
+    where: {
+      tanggalakhir: { lt: now },
+      contract: { status: { notIn: ["berakhir", "dihentikan"] } },
+    },
+    select: { kontrakid: true },
+  });
+
+  if (expEmployments.length > 0) {
+    const ids = expEmployments.map((e) => e.kontrakid);
+    const res = await prisma.contract.updateMany({
+      where: { id: { in: ids }, status: { notIn: ["berakhir", "dihentikan"] } },
+      data: { status: "berakhir" },
+    });
+    updated += res.count;
+  }
+
+  // Fallback: any contract whose jatuhtempo < now and not already terminal
+  const resFallback = await prisma.contract.updateMany({
+    where: {
+      jatuhtempo: { lt: now },
+      status: { notIn: ["berakhir", "dihentikan"] },
+    },
+    data: { status: "berakhir" },
+  });
+  updated += resFallback.count;
+
+  return { autoExpired: updated };
+}
+
 // Standalone runner if invoked directly (node ts-node etc.)
 if (require.main === module) {
-  sendExpiryNotifications()
-    .then((r) => {
-      console.log("Expiry notification run result:", r);
+  (async () => {
+    try {
+      const notif = await sendExpiryNotifications();
+      const expired = await autoExpireContracts();
+      console.log("Expiry notification run result:", notif, expired);
       process.exit(0);
-    })
-    .catch((err) => {
+    } catch (err) {
       console.error(err);
       process.exit(1);
-    });
+    }
+  })();
 }

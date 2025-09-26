@@ -2,6 +2,7 @@
 
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
+import jwt from "jsonwebtoken";
 
 // GET /api/contract?id=123  -> single contract (with details)
 // GET /api/contract          -> list all contracts (basic data)
@@ -329,7 +330,7 @@ export async function PATCH(request: Request) {
   try {
     const { searchParams } = new URL(request.url);
     const id = searchParams.get("id");
-    
+
     if (!id) {
       return NextResponse.json(
         { success: false, error: "Contract ID is required" },
@@ -355,18 +356,28 @@ export async function PATCH(request: Request) {
       );
     }
 
-    // Validate status values
-    const validStatuses = ['draft', 'aktif', 'berakhir', 'dihentikan'];
+    // Validate status values (manual set to 'berakhir' disallowed – auto only)
+    const validStatuses = ["draft", "aktif", "berakhir", "dihentikan"];
     if (!validStatuses.includes(status)) {
       return NextResponse.json(
         { success: false, error: "Invalid status value" },
         { status: 400 }
       );
     }
+    if (status === "berakhir") {
+      return NextResponse.json(
+        {
+          success: false,
+          error:
+            "Status 'berakhir' ditetapkan otomatis saat kontrak melewati tanggal jatuh tempo",
+        },
+        { status: 400 }
+      );
+    }
 
     // Check if contract exists
     const existingContract = await prisma.contract.findUnique({
-      where: { id: numericId }
+      where: { id: numericId },
     });
 
     if (!existingContract) {
@@ -376,10 +387,91 @@ export async function PATCH(request: Request) {
       );
     }
 
-    // Update contract status
+    // Auth: only MANAGEMENT can change status per business rule
+    const token =
+      (request as any).cookies?.get?.("auth-token")?.value ||
+      (typeof (globalThis as any).headers === "function"
+        ? undefined
+        : undefined);
+    // For edge cases in Next 13 route handlers, we re-access via request.headers (cookie string)
+    let userRole: string | null = null;
+    let userId: number | null = null;
+    try {
+      let jwtToken = token;
+      if (!jwtToken) {
+        // Fallback parse cookie header manually
+        const cookieHeader = (request as any).headers?.get?.("cookie");
+        if (cookieHeader) {
+          const match = cookieHeader
+            .split(";")
+            .map((c: string) => c.trim())
+            .find((c: string) => c.startsWith("auth-token="));
+          if (match) jwtToken = match.substring("auth-token=".length);
+        }
+      }
+      if (!jwtToken) {
+        return NextResponse.json(
+          { success: false, error: "Unauthorized: No auth token" },
+          { status: 401 }
+        );
+      }
+      const decoded: any = jwt.verify(
+        jwtToken,
+        process.env.JWT_SECRET || "your-secret-key"
+      );
+      userRole = decoded.category;
+      userId = decoded.userId;
+    } catch (e) {
+      return NextResponse.json(
+        { success: false, error: "Unauthorized: Invalid token" },
+        { status: 401 }
+      );
+    }
+
+    if (userRole !== "MANAGEMENT") {
+      return NextResponse.json(
+        {
+          success: false,
+          error: "Hanya role MANAGEMENT yang boleh mengubah status kontrak",
+        },
+        { status: 403 }
+      );
+    }
+
+    // Enforce allowed transitions:
+    // draft -> aktif
+    // draft -> dihentikan
+    // aktif -> dihentikan
+    // No other transitions; terminal states: dihentikan, berakhir
+    const current = existingContract.status;
+    const allowed =
+      (current === "draft" &&
+        (status === "aktif" || status === "dihentikan")) ||
+      (current === "aktif" && status === "dihentikan");
+
+    if (current === "berakhir" || current === "dihentikan") {
+      return NextResponse.json(
+        {
+          success: false,
+          error: `Kontrak dengan status '${current}' tidak dapat diubah lagi`,
+        },
+        { status: 400 }
+      );
+    }
+
+    if (!allowed) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: `Transisi status tidak valid (${current} -> ${status})`,
+        },
+        { status: 400 }
+      );
+    }
+
     const updatedContract = await prisma.contract.update({
       where: { id: numericId },
-      data: { status }
+      data: { status },
     });
 
     return NextResponse.json({
@@ -387,10 +479,10 @@ export async function PATCH(request: Request) {
       message: "Contract status updated successfully",
       contract: {
         id: updatedContract.id,
-        status: updatedContract.status
-      }
+        status: updatedContract.status,
+        updatedBy: userId,
+      },
     });
-
   } catch (error) {
     console.error("Error updating contract status:", error);
     return NextResponse.json(

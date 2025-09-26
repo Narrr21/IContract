@@ -79,7 +79,6 @@ export function Navbar() {
     const allNavLinks = {
       dashboard: { href: "/dashboard", label: "Beranda" },
       create: { href: "/create", label: "Buat Kontrak" },
-      review: { href: "/review", label: "Review" },
       employment: { href: "/employment", label: "Kontrak Kerja" },
       draft: { href: "/draft", label: "Draft" },
       profile: { href: "/profile", label: "Profil" },
@@ -91,9 +90,6 @@ export function Navbar() {
       case "MANAGEMENT":
         return [
           allNavLinks.dashboard,
-          allNavLinks.review,
-          allNavLinks.employment,
-          allNavLinks.draft,
         ];
       case "ADMIN":
         return [allNavLinks.dashboard, allNavLinks.register];
@@ -102,13 +98,10 @@ export function Navbar() {
       case "LEGAL":
         return [
           allNavLinks.dashboard,
-          allNavLinks.create,
-          allNavLinks.review,
-          allNavLinks.draft,
         ];
       default:
         // Default navigation for users without specific roles
-        return [allNavLinks.dashboard, allNavLinks.create, allNavLinks.review];
+        return [allNavLinks.dashboard];
     }
   };
 
