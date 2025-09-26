@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { Poppins, Noto_Sans } from "next/font/google";
 // import { Navbar } from "@/components/custom/navbar";
-import { Footer } from "@/components/custom/footer";
+// import { Footer } from "@/components/custom/footer";
 import "./globals.css";
 
 const poppins = Poppins({
@@ -33,7 +33,7 @@ export default function RootLayout({
       >
         {/* <Navbar /> */}
         {children}
-        <Footer />
+        {/* Footer will be handled by individual layout groups (public)/(main) */}
       </body>
     </html>
   );
