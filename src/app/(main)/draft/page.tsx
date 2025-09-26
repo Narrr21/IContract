@@ -35,6 +35,7 @@ import {
 } from "lucide-react";
 import { format } from "date-fns";
 import { createContractWithDetails } from "@/lib/helper";
+import PreviewContract from '@/components/PreviewContract'
 
 interface ContractData {
   // Informasi Umum
@@ -1416,6 +1417,20 @@ export default function DraftPage({
             </div>
           )}
 
+          {/* Preview Contract Section - Only show on last step */}
+          {currentStep === steps.length - 1 && (
+            <div className="mt-8 pt-6 border-t">
+              <PreviewContract 
+                contractType="partnership" 
+                contractData={contractData}
+                onSave={() => {
+                  // Optional: Add any save logic here
+                  console.log('Contract saved/generated');
+                }}
+              />
+            </div>
+          )}
+
           {/* Navigation Buttons */}
           <div className="flex justify-between mt-8 pt-6 border-t">
             <Button
@@ -1438,7 +1453,7 @@ export default function DraftPage({
                       Generating...
                     </span>
                   ) : (
-                    "Generate Kontrak"
+                    "Simpan ke Database"
                   )}
                 </Button>
               ) : (

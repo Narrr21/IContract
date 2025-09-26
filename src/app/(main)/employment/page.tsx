@@ -37,6 +37,7 @@ import {
 import { format } from "date-fns";
 import { calculateEndDate } from "@/lib/helper";
 import { createContractWithDetails } from "@/lib/contractHelpers";
+import PreviewContract from '@/components/PreviewContract'
 
 interface EmploymentContractData {
   // Informasi Umum Perjanjian
@@ -1006,6 +1007,20 @@ export default function EmploymentPage({
               </div>
             </div>
           )}
+          {/* Preview Contract Section - Only show on last step */}
+          {currentStep === steps.length - 1 && (
+            <div className="mt-8 pt-6 border-t">
+              <PreviewContract 
+                contractType="employment" 
+                contractData={contractData}
+                onSave={() => {
+                  // Optional: Add any save logic here
+                  console.log('Employment contract saved/generated');
+                }}
+              />
+            </div>
+          )}
+
           {/* Navigation Buttons */}
           <div className="flex justify-between mt-8 pt-6 border-t">
             <Button
@@ -1024,7 +1039,7 @@ export default function EmploymentPage({
                 >
                   {isGenerating
                     ? "Membuat Kontrak..."
-                    : "Generate Kontrak Kerja"}
+                    : "Simpan ke Database"}
                 </Button>
               ) : (
                 <Button
