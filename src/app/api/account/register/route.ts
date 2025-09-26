@@ -1,9 +1,98 @@
 import { NextRequest, NextResponse } from "next/server";
+import { prisma } from "@/lib/db";
+import bcrypt from "bcryptjs";
+import jwt from "jsonwebtoken";
+import { UserCategory } from "@prisma/client";
 
 export async function POST(req: NextRequest) {
-  const { email, password, firstname, lastname } = await req.json();
+  try {
+    const { firstname, lastname, email, password, confirmpassword } = await req.json();
 
-  // Perform registration logic here
+    console.log("📝 Registration attempt:", { firstname, lastname, email }); // Debug log
 
-  return NextResponse.json({ message: "Registration successful" });
+    // Validation
+    if (!firstname || !lastname || !email || !password || !confirmpassword) {
+      return NextResponse.json({ error: "All fields are required" }, { status: 400 });
+    }
+
+    if (password !== confirmpassword) {
+      return NextResponse.json({ error: "Passwords do not match" }, { status: 400 });
+    }
+
+    // Check if user already exists
+    const existingUser = await prisma.user.findUnique({
+      where: { email }
+    });
+
+    if (existingUser) {
+      return NextResponse.json({ error: "User already exists with this email" }, { status: 409 });
+    }
+
+    console.log("🔐 Hashing password..."); // Debug log
+    const hashedPassword = await bcrypt.hash(password, 10);
+
+    const profilepath = "/profiles/default.png";
+    
+    console.log("💾 Creating user in database..."); // Debug log
+    const user = await prisma.user.create({
+      data: {
+        email,
+        firstname,
+        lastname,
+        category: UserCategory.ADMIN,
+        password: hashedPassword,
+        profilepath
+      },
+    });
+
+    console.log("✅ User created successfully:", user.id); // Debug log
+
+    const token = jwt.sign(
+      { 
+        userId: user.id, 
+        email: user.email,
+        category: user.category 
+      }, 
+      process.env.JWT_SECRET || 'your-secret-key', 
+      { expiresIn: "7d" }
+    );
+
+    // Create response with token in cookie (consistent with login)
+    const response = NextResponse.json({ 
+      message: "Registration successful",
+      success: true,
+      user: {
+        id: user.id,
+        email: user.email,
+        firstname: user.firstname,
+        lastname: user.lastname,
+        category: user.category
+      }
+    });
+
+    // Set cookie like in login route
+    response.cookies.set('user-id', user.id.toString(), {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'lax',
+      maxAge: 60 * 60 * 24 * 7 // 7 days
+    });
+
+    return response;
+
+  } catch (error) {
+    console.error("❌ Registration error:", error);
+    
+    // Handle specific Prisma errors
+    if (error instanceof Error) {
+      if (error.message.includes('Unique constraint')) {
+        return NextResponse.json({ error: "Email already exists" }, { status: 409 });
+      }
+    }
+    
+    return NextResponse.json({ 
+      error: "Registration failed",
+      details: error instanceof Error ? error.message : "Unknown error"
+    }, { status: 500 });
+  }
 }

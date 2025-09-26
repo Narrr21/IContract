@@ -36,16 +36,42 @@ export default function RegisterPage() {
     }
 
     try {
-      await new Promise((resolve) => setTimeout(resolve, 1000));
-      console.log("Registration successful for:", {
-        firstName,
-        lastName,
-        email,
+      // Actually call your registration API
+      const response = await fetch('/api/account/register', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          firstname: firstName,
+          lastname: lastName,
+          email: email,
+          password: password,
+          confirmpassword: confirmPassword
+        }),
       });
 
-      router.push("/login");
+      const data = await response.json();
+
+      if (!response.ok) {
+        setError(data.error || 'Registration failed');
+        return;
+      }
+
+      if (data.success) {
+        console.log("Registration successful!", data.user);
+        
+        // Dispatch event to update navbar (like in login)
+        window.dispatchEvent(new CustomEvent('userLoggedIn'));
+        
+        // Redirect to home page since user is now logged in
+        router.push("/");
+        window.location.href = "/";
+      }
+
     } catch (err: any) {
-      setError(err.message || "An error occurred during registration.");
+      console.error("Registration error:", err);
+      setError("Network error. Please try again.");
     } finally {
       setIsLoading(false);
     }
