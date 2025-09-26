@@ -88,7 +88,7 @@ export default function LandingPage() {
       </section>
 
        {/* 4. Section Galeri/Manfaat */}
-       <section className="pb-20 px-4 text-center">
+       <section className="text-center">
           <div className="container mx-auto">
               <h2 className="text-3xl md:text-4xl font-bold mb-12">untuk pengelolaan kontrak yang lebih rapi!</h2>
               <div className="relative w-full max-w-4xl h-64 md:h-96 mx-auto my-12 flex items-center justify-center">
@@ -103,10 +103,10 @@ export default function LandingPage() {
       </section>
 
       {/* 5. Final Call to Action */}
-      <section className="pb-20 px-4 text-center">
+      <section className="px-4 text-center">
           <div className="container mx-auto">
               <Link href="/login" passHref>
-                  <Button size="lg" className="bg-blue-600 hover:bg-blue-700">
+                  <Button size="lg" className="bg-blue-600 hover:bg-blue-700 mb-12">
                       Coba sekarang
                       <ArrowRight className="ml-2 h-5 w-5" />
                   </Button>
