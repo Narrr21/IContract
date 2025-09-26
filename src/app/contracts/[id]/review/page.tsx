@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { useParams } from "next/navigation";
 import dynamic from "next/dynamic";
 import {
   ResizableHandle,
@@ -96,7 +97,12 @@ function ContractReviewerPageContent() {
   );
   const [textWithCoords, setTextWithCoords] = useState([]);
   const [isLoadingText, setIsLoadingText] = useState(true);
-  const pdfFile = "sample-kontrak.pdf";
+  // Ambil id dari route params
+  const params = useParams();
+  const rawId = (params as any)?.id;
+  const contractId = Array.isArray(rawId) ? rawId[0] : rawId;
+  // Sesuaikan path file PDF berdasarkan id kontrak
+  const pdfFile = contractId ? `/contract/${contractId}.pdf` : "";
 
   // NEW: AI Analysis state
   const [contractContent, setContractContent] = useState("");

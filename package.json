@@ -11,7 +11,8 @@
     "db:generate": "prisma generate",
     "db:studio": "prisma studio",
     "db:reset": "prisma migrate reset",
-    "db:seed": "tsx prisma/seed.ts"
+    "db:seed": "tsx prisma/seed.ts",
+    "cron:contract-expiry": "tsx src/lib/contractExpiryNotifier.ts"
   },
   "dependencies": {
     "@prisma/client": "^6.16.2",
