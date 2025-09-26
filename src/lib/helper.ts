@@ -221,3 +221,39 @@ export async function deleteContractWithDetails(contractId: number) {
     throw error;
   }
 }
+
+/**
+ * Calculate end date based on start date and contract type
+ */
+export function calculateEndDate(startDate: Date, contractType: string): Date {
+  const endDate = new Date(startDate);
+  
+  switch (contractType.toLowerCase()) {
+    case 'tetap':
+    case 'permanent':
+      // Permanent contracts typically have a long duration, using 2 years as default
+      endDate.setFullYear(endDate.getFullYear() + 2);
+      break;
+    case 'kontrak':
+    case 'contract':
+      // Contract employment typically 1 year
+      endDate.setFullYear(endDate.getFullYear() + 1);
+      break;
+    case 'magang':
+    case 'internship':
+      // Internship typically 3-6 months
+      endDate.setMonth(endDate.getMonth() + 6);
+      break;
+    case 'paruh waktu':
+    case 'part-time':
+      // Part-time can vary, using 1 year as default
+      endDate.setFullYear(endDate.getFullYear() + 1);
+      break;
+    default:
+      // Default to 1 year
+      endDate.setFullYear(endDate.getFullYear() + 1);
+      break;
+  }
+  
+  return endDate;
+}

@@ -1,233 +1,179 @@
-import { NextRequest, NextResponse } from "next/server";
-import { PrismaClient } from "@prisma/client";
-import fs from "fs";
-import path from "path";
+// Update the API route to handle both partnership and employment contracts
 
-const prisma = new PrismaClient();
+import { NextResponse } from 'next/server'
+import { prisma } from '@/lib/db'
 
-// Helper function to convert BigInt values to strings for JSON serialization
-function serializeBigInt(obj: any): any {
-  if (obj === null || obj === undefined) return obj;
-
-  if (typeof obj === "bigint") {
-    return obj.toString();
-  }
-
-  if (Array.isArray(obj)) {
-    return obj.map(serializeBigInt);
-  }
-
-  if (typeof obj === "object") {
-    const result: any = {};
-    for (const key in obj) {
-      result[key] = serializeBigInt(obj[key]);
-    }
-    return result;
-  }
-
-  return obj;
-}
-
-// GET - GET /api/contract?id=1
-export async function GET(req: NextRequest) {
+export async function POST(request: Request) {
   try {
-    const { searchParams } = new URL(req.url);
-    const contractId = parseInt(searchParams.get("id") || "0");
+    const data = await request.json()
+    console.log('📥 Received contract data:', data)
 
-    if (!contractId) {
-      return NextResponse.json(
-        { success: false, error: "Contract ID is required" },
-        { status: 400 }
-      );
+    // Check if it's an employment contract
+    if (data.type === 'employment') {
+      console.log('🏢 Creating employment contract...')
+      
+      // Create main contract record first
+      const contract = await prisma.contract.create({
+        data: {
+          namakontrak: data.namakontrak,
+          counterparty: data.counterparty,
+          type: 'employment',
+          status: 'draft',
+          jatuhtempo: data.tanggalakhir ? new Date(data.tanggalakhir) : new Date(Date.now() + 365 * 24 * 60 * 60 * 1000)
+        }
+      })
+
+      console.log('📋 Main contract created with ID:', contract.id)
+
+      // Create employment details record
+      const employmentDetails = await prisma.employment.create({
+        data: {
+          kontrakid: contract.id,
+          
+          // Contract Information
+          nomorkontrak: data.nomorkontrak,
+          judulkontrak: data.judulkontrak,
+          jeniskontrak: data.jeniskontrak,
+          tanggalmulai: data.tanggalmulai ? new Date(data.tanggalmulai) : new Date(),
+          tanggalakhir: data.tanggalakhir ? new Date(data.tanggalakhir) : new Date(Date.now() + 365 * 24 * 60 * 60 * 1000),
+          
+          // Employee Information
+          namalengkap: data.namalengkap,
+          tanggallahir: data.tanggallahir || '',
+          jeniskelamin: data.jeniskelamin,
+          alamatlengkap: data.alamatlengkap,
+          nomortelepon: data.nomortelepon,
+          email: data.email,
+          
+          // Job Details
+          posisijabatan: data.posisijabatan,
+          lokasikerja: data.lokasikerja,
+          tanggalmulaikerja: data.tanggalmulaikerja ? new Date(data.tanggalmulaikerja) : new Date(),
+          haricuti: data.haricuti,
+          deskripsipekerjaan: data.deskripsipekerjaan,
+          detailcuti: data.detailcuti,
+          aturanlembur: data.aturanlembur,
+          
+          // Compensation
+          gajipokok: data.gajipokok || 0,
+          tunjangantetap: data.tunjangantetap || 0,
+          tunjangantidaktetap: data.tunjangantidaktetap || 0,
+          jaminansosial: data.jaminansosial,
+          fasilitaslain: data.fasilitaslain,
+          
+          // Legal & Disciplinary
+          hukumdanrahasia: data.hukumdanrahasia,
+          disiplin: data.disiplin,
+          sanksi: data.sanksi,
+          pemutusanhubungankerja: data.pemutusanhubungankerja
+        }
+      })
+
+      console.log('👨‍💼 Employment details created with ID:', employmentDetails.id)
+
+      // Return contract with employment details
+      const fullContract = await prisma.contract.findUnique({
+        where: { id: contract.id },
+        include: {
+          employmentDetails: true
+        }
+      })
+
+      return NextResponse.json({
+        success: true,
+        contract: fullContract,
+        message: 'Employment contract created successfully'
+      })
+    } 
+    else {
+      // Handle partnership contracts (existing code)
+      console.log('🤝 Creating partnership contract...')
+      
+      // Create main contract record first
+      const contract = await prisma.contract.create({
+        data: {
+          namakontrak: data.namakontrak,
+          counterparty: data.counterparty,
+          type: data.type || 'partnership',
+          status: 'draft',
+          jatuhtempo: data.tanggalakhir ? new Date(data.tanggalakhir) : new Date(Date.now() + 365 * 24 * 60 * 60 * 1000)
+        }
+      })
+
+      // Create partnership details
+      const partnershipDetails = await prisma.partnership.create({
+        data: {
+          kontrakid: contract.id,
+          nomorkontrak: data.nomorkontrak,
+          judul: data.judul,
+          jenis: data.jenis,
+          tanggalmulai: data.tanggalmulai ? new Date(data.tanggalmulai) : new Date(),
+          tanggalakhir: data.tanggalakhir ? new Date(data.tanggalakhir) : new Date(),
+          
+          // Company 1
+          perusahaan1: data.perusahaan1,
+          direktur1: data.direktur1,
+          alamat1: data.alamat1,
+          nomortel1: data.nomortel1,
+          email1: data.email1,
+          npwp1: data.npwp1,
+          nomorusaha1: data.nomorusaha1,
+          
+          // Company 2
+          perusahaan2: data.perusahaan2,
+          direktur2: data.direktur2,
+          alamat2: data.alamat2,
+          nomortel2: data.nomortel2,
+          email2: data.email2,
+          npwp2: data.npwp2,
+          nomorusaha2: data.nomorusaha2,
+          
+          // Service details
+          jenislayanan: data.jenislayanan,
+          wilayahoperasi: data.wilayahoperasi,
+          desklayanan: data.desklayanan,
+          hak1: data.hak1,
+          hak2: data.hak2,
+          syaratlayanan: data.syaratlayanan,
+          
+          // Financial
+          nominal: data.nominal || 0,
+          tenggatbayar: data.tenggatbayar ? new Date(data.tenggatbayar) : new Date(),
+          syaratbayar: data.syaratbayar,
+          bank: data.bank,
+          namapemilik: data.namapemilik,
+          norek: data.norek,
+          
+          // Legal
+          denda: data.denda,
+          tenggatklaim: data.tenggatklaim ? new Date(data.tenggatklaim) : new Date(),
+          makskompensasi: data.makskompensasi || 0,
+          sengketa: data.sengketa,
+          majeure: data.majeure
+        }
+      })
+
+      // Return contract with partnership details
+      const fullContract = await prisma.contract.findUnique({
+        where: { id: contract.id },
+        include: {
+          partnershipDetails: true
+        }
+      })
+
+      return NextResponse.json({
+        success: true,
+        contract: fullContract,
+        message: 'Partnership contract created successfully'
+      })
     }
 
-    console.log(`📖 Fetching contract ${contractId}`);
-
-    const contract = await prisma.contract.findUnique({
-      where: { id: contractId },
-      include: {
-        partnershipDetails: true,
-        employmentDetails: true,
-      },
-    });
-
-    if (!contract) {
-      return NextResponse.json(
-        { success: false, error: "Contract not found" },
-        { status: 404 }
-      );
-    }
-
-    return NextResponse.json({
-      success: true,
-      contract: serializeBigInt(contract),
-    });
   } catch (error) {
-    console.error("API Error - Fetch Contract:", error);
-    return NextResponse.json(
-      {
-        success: false,
-        error: "Failed to fetch contract",
-        details: error instanceof Error ? error.message : "Unknown error",
-      },
-      { status: 500 }
-    );
-  }
-}
-
-// CREATE - POST /api/contract
-export async function POST(req: NextRequest) {
-  try {
-    const data = await req.json();
-    
-    console.log('📝 Creating contract with data:', {
-      namakontrak: data.namakontrak,
-      nomorkontrak: data.nomorkontrak,
-      judul: data.judul,
-      nominal: typeof data.nominal === 'number' ? data.nominal : 'invalid',
-      makskompensasi: typeof data.makskompensasi === 'number' ? data.makskompensasi : 'invalid',
-      type: data.type
-    });
-    
-    // Validate required fields
-    if (!data.namakontrak || !data.nomorkontrak || !data.judul) {
-      return NextResponse.json(
-        { 
-          success: false, 
-          error: 'Missing required fields: namakontrak, nomorkontrak, judul' 
-        },
-        { status: 400 }
-      );
-    }
-
-    // Use the helper function - all the sync logic is handled inside
-    const contract = await createContractWithDetails(data);
-    
+    console.error('❌ Error creating contract:', error)
     return NextResponse.json({
-      success: true,
-      message: "Contract created successfully",
-      contract: serializeBigInt(fullContract),
-    });
-  } catch (error) {
-    console.error("API Error - Create Contract:", error);
-    return NextResponse.json(
-      {
-        success: false,
-        error: "Failed to create contract",
-        details: error instanceof Error ? error.message : "Unknown error",
-      },
-      { status: 500 }
-    );
-  }
-}
-
-// UPDATE - PUT /api/contract
-export async function PUT(req: NextRequest) {
-  try {
-    const {
-      contractId,
-      contractType,
-      partnershipDetails,
-      employmentDetails,
-      ...updateData
-    } = await req.json();
-
-    if (!contractId) {
-      return NextResponse.json(
-        { success: false, error: "Contract ID is required" },
-        { status: 400 }
-      );
-    }
-
-    console.log(`📝 Updating contract ${contractId} with data:`, updateData);
-
-    // Update basic contract
-    await prisma.contract.update({
-      where: { id: contractId },
-      data: updateData,
-    });
-
-    // Update or create type-specific details
-    if (contractType === "partnership" && partnershipDetails) {
-      await prisma.partnership.upsert({
-        where: { kontrakid: contractId },
-        update: partnershipDetails,
-        create: {
-          kontrakid: contractId,
-          ...partnershipDetails,
-        },
-      });
-    } else if (contractType === "employment" && employmentDetails) {
-      await prisma.employment.upsert({
-        where: { kontrakid: contractId },
-        update: employmentDetails,
-        create: {
-          kontrakid: contractId,
-          ...employmentDetails,
-        },
-      });
-    }
-
-    // Fetch the updated contract with details
-    const contract = await prisma.contract.findUnique({
-      where: { id: contractId },
-      include: {
-        partnershipDetails: true,
-        employmentDetails: true,
-      },
-    });
-
-    return NextResponse.json({
-      success: true,
-      message: "Contract updated successfully",
-      contract: serializeBigInt(contract),
-    });
-  } catch (error) {
-    console.error("API Error - Update Contract:", error);
-    return NextResponse.json(
-      {
-        success: false,
-        error: "Failed to update contract",
-        details: error instanceof Error ? error.message : "Unknown error",
-      },
-      { status: 500 }
-    );
-  }
-}
-
-// DELETE - DELETE /api/contract
-export async function DELETE(req: NextRequest) {
-  try {
-    const { searchParams } = new URL(req.url);
-    const contractId = parseInt(searchParams.get("id") || "0");
-
-    if (!contractId) {
-      return NextResponse.json(
-        { success: false, error: "Contract ID is required" },
-        { status: 400 }
-      );
-    }
-
-    console.log(`🗑️ Deleting contract ${contractId}`);
-
-    // Delete the contract (cascade will handle related records)
-    await prisma.contract.delete({
-      where: { id: contractId },
-    });
-
-    return NextResponse.json({
-      success: true,
-      message: "Contract deleted successfully",
-    });
-  } catch (error) {
-    console.error("API Error - Delete Contract:", error);
-    return NextResponse.json(
-      {
-        success: false,
-        error: "Failed to delete contract",
-        details: error instanceof Error ? error.message : "Unknown error",
-      },
-      { status: 500 }
-    );
+      success: false,
+      error: 'Failed to create contract',
+      details: error instanceof Error ? error.message : 'Unknown error'
+    }, { status: 500 })
   }
 }

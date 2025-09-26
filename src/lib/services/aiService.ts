@@ -415,8 +415,7 @@ Please provide a comprehensive summary of all important contract elements in a s
   CONTRACT_TITLE: [value];
   EMPLOYMENT_TYPE: [value];
   START_DATE: [DD/MM/YYYY];
-  DURATION: [value];
-  PROBATION_PERIOD: [value];
+  END_DATE: [DD/MM/YYYY];
 
   COMPANY_NAME: [value];
   COMPANY_DIRECTOR: [value];
@@ -426,37 +425,31 @@ Please provide a comprehensive summary of all important contract elements in a s
   COMPANY_NPWP: [value];
 
   EMPLOYEE_NAME: [value];
-  EMPLOYEE_POSITION: [value];
+  EMPLOYEE_BIRTH_DATE: [DD/MM/YYYY];
+  EMPLOYEE_GENDER: [L/P];
   EMPLOYEE_ADDRESS: [value];
-  EMPLOYEE_GENDER: [value];
-  EMPLOYEE_AGE: [value];
-  CONTRACT_TYPE: [PKWTT/PKWT];
-  EMPLOYEE_ID: [value];
   EMPLOYEE_PHONE: [value];
   EMPLOYEE_EMAIL: [value];
 
-  JOB_DESCRIPTION: [value];
+  EMPLOYEE_POSITION: [value];
   WORK_LOCATION: [value];
-  WORK_SCHEDULE: [value];
-  BREAK_TIME: [value];
-  LEAVE_POLICY: [value];
-  OVERTIME_POLICY: [value];
+  WORK_START_DATE: [DD/MM/YYYY];
+  CONTRACT_TYPE: [PKWTT/PKWT];
+  LEAVE_DAYS: [value];
+  JOB_DESCRIPTION: [value];
+  LEAVE_DETAILS: [value];
+  OVERTIME_RULES: [value];
 
   BASIC_SALARY: [value];
   FIXED_ALLOWANCES: [value];
   VARIABLE_ALLOWANCES: [value];
   SOCIAL_SECURITY: [value];
-  HEALTH_INSURANCE: [value];
   OTHER_BENEFITS: [value];
-  PAYMENT_SCHEDULE: [value];
 
   CONFIDENTIALITY: [value];
-  NON_COMPETE: [value];
   DISCIPLINARY_RULES: [value];
+  SANCTIONS: [value];
   TERMINATION_CONDITIONS: [value];
-  NOTICE_PERIOD: [value];
-  SEVERANCE_PAY: [value];
-  DISPUTE_RESOLUTION: [value];
 
   If any information is not found, use: "Not specified in document;"
 

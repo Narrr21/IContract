@@ -12,6 +12,7 @@ import { Calendar } from '@/components/ui/calendar'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
 import { CalendarIcon, Upload, FileText, Users, CheckCircle } from 'lucide-react'
 import { format } from 'date-fns'
+import { createContractWithDetails } from '@/lib/helper'
 
 interface ContractData {
   // Informasi Umum
