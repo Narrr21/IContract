@@ -25,29 +25,60 @@ model User {
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt
 
-  // Relations
-  contracts   Contract[]
-
   @@map("users")
 }
 
 model Contract {
   id                Int       @id @default(autoincrement())
+  namakontrak       String
   status            String    @default("draft")
-  title             String
-  userId            Int
   counterparty      String
   type              String
-  startdate         DateTime
-  terminationdate   DateTime
-  compensationsumm  String
-  jurisdiction      String
-  content           String
   createdAt         DateTime  @default(now())
   updatedAt         DateTime  @updatedAt
-
-  // Relations
-  user              User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  jatuhtempo        DateTime
 
   @@map("contracts")
+}
+
+model Partnership {
+  kontrakid       Int @id
+  nomorkontrak    String
+  judul           String
+  jenis           String
+  tanggalmulai    DateTime
+  tanggalakhir    DateTime
+  perusahaan1     String
+  direktur1       String
+  alamat1         String
+  nomortel1       String
+  email1          String
+  npwp1           String
+  nomorusaha1     String
+  perusahaan2     String
+  direktur2       String
+  alamat2         String
+  nomortel2       String
+  email2          String
+  npwp2           String
+  nomorusaha2     String
+  jenislayanan    String
+  wilayahoperasi  String
+  desklayanan     String
+  hak1            String
+  hak2            String
+  syaratlayanan   String
+  nominal         Int
+  tenggatbayar    DateTime
+  syaratbayar     String
+  bank            String
+  namapemilik     String
+  norek           String
+  denda           String
+  tenggatklaim    DateTime
+  makskompensasi  Int
+  sengketa        String
+  majeure         String
+
+  @@map("partnership_contracts")
 }

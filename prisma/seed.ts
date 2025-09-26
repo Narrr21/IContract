@@ -23,18 +23,44 @@ async function main() {
   
   console.log('Created user:', user)
   
-  // Create a dummy contract for testing
-//   const contract = await prisma.contract.create({
-//     data: {
-//       title: 'Sample Contract',
-//       content: 'This is a sample contract for testing purposes.',
-//       type: 'service',
-//       status: 'draft',
-//       userId: user.id,
-//     },
-//   })
-  
-//   console.log('Created contract:', contract)
+  const sampleContracts = [
+    {
+      namakontrak: 'Kontrak Kerja Pak Budi',
+      status: 'dihentikan',
+      counterparty: 'PT Mulia Abadi',
+      type: 'employment',
+      jatuhtempo: new Date('2025-03-01')
+    },
+    {
+      namakontrak: 'Kontrak Partnership ABC Corp',
+      status: 'aktif',
+      counterparty: 'ABC Corporation',
+      type: 'partnership',
+      jatuhtempo: new Date('2025-12-31')
+    },
+    {
+      namakontrak: 'Kontrak Layanan IT Support',
+      status: 'draft',
+      counterparty: 'Tech Solutions',
+      type: 'services',
+      jatuhtempo: new Date('2024-12-31')
+    },
+    {
+      namakontrak: 'Kontrak Konsultan Marketing',
+      status: 'aktif',
+      counterparty: 'Marketing Pro',
+      type: 'consulting',
+      jatuhtempo: new Date('2025-06-15')
+    }
+  ];
+
+  for (const contract of sampleContracts) {
+    await prisma.contract.create({
+      data: contract
+    });
+  }
+
+  console.log('✅ Sample contracts created!');
 }
 
 main()
