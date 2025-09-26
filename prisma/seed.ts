@@ -156,7 +156,7 @@ async function main() {
       hak2: "Market access rights, 40% revenue share, exclusive technology licensing",
       syaratlayanan:
         "Monthly progress reports, quarterly business reviews, annual audits",
-      nominal: 2500000000, // 2.5 billion IDR
+      nominal: 250000,
       tenggatbayar: new Date("2024-02-15"),
       syaratbayar: "Net 30 days from invoice date, payment via bank transfer",
       bank: "Bank Mandiri",
@@ -164,7 +164,7 @@ async function main() {
       norek: "1234567890123",
       denda: "2% per month for late payments, maximum 24% per annum",
       tenggatklaim: new Date("2024-06-01"),
-      makskompensasi: 500000000, // 500 million IDR
+      makskompensasi: 50000,
       sengketa: "Jakarta Commercial Arbitration (BANI)",
       majeure:
         "Force majeure includes natural disasters, government actions, pandemic, war, and other unforeseeable circumstances",
@@ -200,7 +200,7 @@ async function main() {
       hak2: "Brand usage rights, 45% profit sharing, access to proprietary technologies",
       syaratlayanan:
         "Weekly status updates, monthly steering committee meetings, quarterly performance reviews",
-      nominal: 5000000000, // 5 billion IDR
+      nominal: 5000, // 5 billion IDR
       tenggatbayar: new Date("2024-03-01"),
       syaratbayar:
         "Milestone-based payments, 50% upfront, 30% mid-project, 20% completion",
@@ -210,7 +210,7 @@ async function main() {
       denda:
         "1.5% per month for delayed milestones, professional mediation required after 60 days",
       tenggatklaim: new Date("2024-08-01"),
-      makskompensasi: 1000000000, // 1 billion IDR
+      makskompensasi: 100000, // 1 billion IDR
       sengketa: "Indonesian Mediation Center, escalation to BANI arbitration",
       majeure:
         "Extended force majeure clause including cyber attacks, regulatory changes, economic crisis",
@@ -246,7 +246,7 @@ async function main() {
       hak2: "Distribution rights, 50% ownership in joint operations, market development",
       syaratlayanan:
         "Bi-weekly production reports, monthly quality audits, quarterly board meetings",
-      nominal: 7500000000, // 7.5 billion IDR
+      nominal: 750000, // 7.5 billion IDR
       tenggatbayar: new Date("2024-05-01"),
       syaratbayar:
         "Quarterly payments based on production volumes, LC payment terms",
@@ -256,7 +256,7 @@ async function main() {
       denda:
         "3% per month for production delays, penalty clauses for quality issues",
       tenggatklaim: new Date("2024-10-01"),
-      makskompensasi: 1500000000, // 1.5 billion IDR
+      makskompensasi: 150000, // 1.5 billion IDR
       sengketa:
         "Surabaya Commercial Court, alternative dispute resolution preferred",
       majeure:

@@ -81,6 +81,7 @@ export default function DraftPage({ initialInputMethod, initialFile, initialExtr
   const [uploadedFile, setUploadedFile] = useState<File | null>(initialFile || null)
   const [isScanning, setIsScanning] = useState(false)
   const [scanProgress, setScanProgress] = useState(0)
+  const [isGenerating, setIsGenerating] = useState(false)
 
   // Set initial extracted data if available
   useEffect(() => {
@@ -162,6 +163,149 @@ export default function DraftPage({ initialInputMethod, initialFile, initialExtr
 
   const isFieldDisabled = () => {
     return inputMethod === 'upload' && uploadedFile !== null
+  }
+
+  // Helper function to calculate end date from start date and duration
+  const calculateEndDate = (startDate: Date | undefined, duration: string): Date | undefined => {
+    if (!startDate || !duration) return undefined
+    
+    const match = duration.match(/(\d+)\s*(hari|bulan|tahun|day|month|year)/i)
+    if (!match) return undefined
+    
+    const amount = parseInt(match[1])
+    const unit = match[2].toLowerCase()
+    const endDate = new Date(startDate)
+    
+    if (unit.includes('hari') || unit.includes('day')) {
+      endDate.setDate(endDate.getDate() + amount)
+    } else if (unit.includes('bulan') || unit.includes('month')) {
+      endDate.setMonth(endDate.getMonth() + amount)
+    } else if (unit.includes('tahun') || unit.includes('year')) {
+      endDate.setFullYear(endDate.getFullYear() + amount)
+    }
+    
+    return endDate
+  }
+
+  // Function to handle contract generation
+  const handleGenerateContract = async () => {
+    try {
+      setIsGenerating(true)
+      
+      // Validate required fields
+      const requiredFields = [
+        { field: contractData.nomorKontrak, name: 'Nomor Kontrak' },
+        { field: contractData.judul, name: 'Judul Kontrak' },
+        { field: contractData.tanggalMulai, name: 'Tanggal Mulai' },
+        { field: contractData.pihak1.namaPerusahaan, name: 'Nama Perusahaan Pihak 1' },
+        { field: contractData.pihak2.namaPerusahaan, name: 'Nama Perusahaan Pihak 2' },
+      ];
+
+      const missingFields = requiredFields.filter(({ field }) => !field).map(({ name }) => name);
+      
+      if (missingFields.length > 0) {
+        alert(`Harap isi field yang wajib: ${missingFields.join(', ')}`);
+        setIsGenerating(false);
+        return;
+      }
+
+      // Calculate end date from duration if not set
+      const endDate = calculateEndDate(contractData.tanggalMulai, contractData.durasi)
+      if (!endDate) {
+        alert('Format durasi tidak valid. Contoh: "12 bulan" atau "1 tahun"')
+        setIsGenerating(false)
+        return
+      }
+
+      // Transform contract data to match database schema
+      const contractPayload = {
+        namakontrak: contractData.judul,
+        counterparty: contractData.pihak2.namaPerusahaan || 'Unknown',
+        type: 'partnership',
+        nomorkontrak: contractData.nomorKontrak,
+        judul: contractData.judul,
+        jenis: contractData.jenis || 'PARTNERSHIP',
+        tanggalmulai: contractData.tanggalMulai,
+        tanggalakhir: endDate,
+        
+        // Pihak Pertama
+        perusahaan1: contractData.pihak1.namaPerusahaan,
+        direktur1: contractData.pihak1.namaDirektur,
+        alamat1: contractData.pihak1.alamat,
+        nomortel1: contractData.pihak1.nomorTelp,
+        email1: contractData.pihak1.email,
+        npwp1: contractData.pihak1.npwp,
+        nomorusaha1: contractData.pihak1.nomorUsaha,
+        
+        // Pihak Kedua
+        perusahaan2: contractData.pihak2.namaPerusahaan,
+        direktur2: contractData.pihak2.namaDirektur,
+        alamat2: contractData.pihak2.alamat,
+        nomortel2: contractData.pihak2.nomorTelp,
+        email2: contractData.pihak2.email,
+        npwp2: contractData.pihak2.npwp,
+        nomorusaha2: contractData.pihak2.nomorUsaha,
+        
+        // Ruang Lingkup
+        jenislayanan: contractData.jenisLayanan,
+        wilayahoperasi: contractData.wilayahOperasional,
+        desklayanan: contractData.deskripsiLayanan,
+        hak1: contractData.hakKewajibanPihak1,
+        hak2: contractData.hakKewajibanPihak2,
+        syaratlayanan: contractData.syaratLayanan,
+        
+        // Keuangan
+        nominal: parseFloat(contractData.nominal.replace(/[^\d.,]/g, '').replace(',', '.')) || 0,
+        tenggatbayar: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000), // Default 30 days from now
+        syaratbayar: contractData.syaratPembayaran,
+        bank: contractData.caraPembayaran.bank,
+        namapemilik: contractData.caraPembayaran.nama,
+        norek: contractData.caraPembayaran.norek,
+        denda: contractData.dendaKeterlambatan,
+        
+        // Klaim dan Sengketa
+        tenggatklaim: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000), // Default 14 days from now
+        makskompensasi: parseFloat(contractData.maksimalKompensasi.replace(/[^\d.,]/g, '').replace(',', '.')) || 0,
+        sengketa: contractData.penyelesaianSengketa,
+        majeure: contractData.forceMajeure
+      }
+
+      console.log('🚀 Sending contract data:', contractPayload)
+      
+      // Call API to create contract
+      const response = await fetch('/api/contract', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(contractPayload),
+      })
+
+      const result = await response.json()
+      
+      if (result.success) {
+        console.log('✅ Contract created:', result.contract)
+        
+        // Show success message
+        const successMessage = `Kontrak "${contractData.judul}" berhasil dibuat!\nID: ${result.contract?.id}\n\nAnda akan diarahkan ke dashboard...`;
+        alert(successMessage);
+        
+        // Redirect to dashboard to see the created contract
+        setTimeout(() => {
+          window.location.href = '/dashboard'
+        }, 2000)
+        
+      } else {
+        console.error('❌ Failed to create contract:', result)
+        alert(`Gagal membuat kontrak:\n${result.error || 'Unknown error'}\n\nDetail: ${result.details || 'No details available'}`)
+      }
+      
+    } catch (error) {
+      console.error('❌ Error generating contract:', error)
+      alert('Terjadi kesalahan saat membuat kontrak. Silakan coba lagi.')
+    } finally {
+      setIsGenerating(false)
+    }
   }
 
   const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -1135,8 +1279,15 @@ export default function DraftPage({ initialInputMethod, initialFile, initialExtr
             
             <div className="flex gap-2">
               {currentStep === steps.length - 1 ? (
-                <Button onClick={() => console.log('Generate Contract', contractData)}>
-                  Generate Kontrak
+                <Button onClick={handleGenerateContract} disabled={isGenerating}>
+                  {isGenerating ? (
+                    <span className="flex items-center">
+                      <span className="animate-spin mr-2">⏳</span>
+                      Generating...
+                    </span>
+                  ) : (
+                    'Generate Kontrak'
+                  )}
                 </Button>
               ) : (
                 <Button 

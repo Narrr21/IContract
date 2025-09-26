@@ -6,8 +6,26 @@ export async function POST(req: NextRequest) {
   try {
     const data = await req.json();
     
-    console.log('📝 Creating contract with data:', data);
+    console.log('📝 Creating contract with data:', {
+      namakontrak: data.namakontrak,
+      nomorkontrak: data.nomorkontrak,
+      judul: data.judul,
+      nominal: typeof data.nominal === 'number' ? data.nominal : 'invalid',
+      makskompensasi: typeof data.makskompensasi === 'number' ? data.makskompensasi : 'invalid',
+      type: data.type
+    });
     
+    // Validate required fields
+    if (!data.namakontrak || !data.nomorkontrak || !data.judul) {
+      return NextResponse.json(
+        { 
+          success: false, 
+          error: 'Missing required fields: namakontrak, nomorkontrak, judul' 
+        },
+        { status: 400 }
+      );
+    }
+
     // Use the helper function - all the sync logic is handled inside
     const contract = await createContractWithDetails(data);
     
