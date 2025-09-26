@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import Image from "next/image";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -50,72 +51,77 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="flex flex-col min-h-screen bg-white text-gray-800">
-
-      {/* 2. Bagian Konten Utama */}
-      <main className="flex-grow container mx-auto grid md:grid-cols-2 gap-16 items-center p-8">
-        
-        {/* Kolom Kiri: Gambar Ilustrasi */}
-        <div className="hidden md:block">
-           {/* Ganti src dengan path gambar ilustrasi Anda di folder /public */}
-          <img 
-            src="/images/register-bg.jpg" 
-            alt="Contract Illustration" 
-            className="object-cover"
-          />
-        </div>
-
-        {/* Kolom Kanan: Form Login */}
-        <div className="flex flex-col justify-center">
-          <div className="mb-6">
-            <h1 className="text-4xl font-bold mb-2">Masuk</h1>
-            <p className="text-gray-500">
-              Kelola, awasi, dan amankan semua kontrak Anda di satu platform.
-            </p>
-          </div>
-
-          <form onSubmit={handleSubmit}>
-            <div className="grid gap-4">
-              <div className="grid gap-2">
-                <Label htmlFor="email">Email</Label>
-                <Input
-                  id="email"
-                  type="email"
-                  placeholder="Email"
-                  required
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  disabled={isLoading}
-                  className="bg-white"
-                />
-              </div>
-              <div className="grid gap-2">
-                 <Label htmlFor="password">Password</Label>
-                <Input
-                  id="password"
-                  type="password"
-                  placeholder="Password"
-                  required
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  disabled={isLoading}
-                  className="bg-white"
-                />
-              </div>
-
-              {error && (
-                <div className="text-red-600 text-sm bg-red-50 p-3 rounded-md border border-red-200">
-                  {error}
-                </div>
-              )}
-
-              <Button type="submit" className="w-full bg-blue-600 hover:bg-blue-700" disabled={isLoading}>
-                {isLoading ? "Signing in..." : "Login"}
-              </Button>
+      <div className="min-h-screen flex">
+          {/* Left Side - Blue Geometric Background */}
+          <div className="flex-1 relative bg-gradient-to-br from-blue-400 via-blue-500 to-blue-600 flex items-center justify-center">
+            {/* Background Image - Add your geometric image here */}
+            <div className="w-full h-full relative overflow-hidden">
+              {/* Background overlay for better text readability */}
+              <div className="absolute inset-0 bg-gradient-to-br from-blue-400/90 via-blue-500/90 to-blue-600/90" />
+              
+              <Image 
+                src="/images/register-bg.jpg" 
+                alt="Geometric Background"
+                fill
+                className="object-cover"
+                priority
+              />
             </div>
-          </form>
-        </div>
-      </main>
-    </div>
-  );
+          </div>
+  
+          {/* Right Side - Form */}
+          <div className="flex-1 flex flex-col justify-center px-12 py-8 bg-white">
+            <div className="w-full max-w-md mx-auto">
+              <div className="text-center mb-8">
+                <h1 className="text-3xl font-bold text-gray-900 mb-2">Masuk</h1>
+                <p className="text-gray-600">
+                  Kelola, awasi, dan amankan semua kontrak<br />
+                  Anda di satu platform.
+                </p>
+              </div>
+  
+              <form onSubmit={handleSubmit}>
+                <div className="grid gap-4">
+                  <div className="grid gap-2">
+                    <Label htmlFor="email">Email</Label>
+                    <Input
+                      id="email"
+                      type="email"
+                      placeholder="Email"
+                      required
+                      value={email}
+                      onChange={(e) => setEmail(e.target.value)}
+                      disabled={isLoading}
+                      className="bg-white"
+                    />
+                  </div>
+                  <div className="grid gap-2">
+                    <Label htmlFor="password">Password</Label>
+                    <Input
+                      id="password"
+                      type="password"
+                      placeholder="Password"
+                      required
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                      disabled={isLoading}
+                      className="bg-white"
+                    />
+                  </div>
+
+                  {error && (
+                    <div className="text-red-600 text-sm bg-red-50 p-3 rounded-md border border-red-200">
+                      {error}
+                    </div>
+                  )}
+
+                  <Button type="submit" className="w-full bg-blue-600 hover:bg-blue-700" disabled={isLoading}>
+                    {isLoading ? "Signing in..." : "Login"}
+                  </Button>
+                </div>
+              </form>
+            </div>
+          </div>
+      </div>
+    );
 }
