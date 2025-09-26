@@ -395,6 +395,9 @@ Please provide a comprehensive summary of all important contract elements in a s
   /**
    * Extract structured contract data from raw text
    */
+  /**
+   * Extract structured contract data from raw text
+   */
   async extractContractData(contractContent: string, contractType: string): Promise<AIResponse> {
     // Different system prompts based on contract type
     let systemPrompt: string;
@@ -402,117 +405,123 @@ Please provide a comprehensive summary of all important contract elements in a s
     if (contractType === 'employment') {
       systemPrompt = `You are an employment contract data extraction specialist. Extract structured information from employment/job contract documents.
 
-  Extract and organize the following information from the provided employment contract:
+  Extract and organize the following information from the provided employment contract.
 
-  ## Contract Basics
-  - Contract Number
-  - Contract Title
-  - Title
-  - Employment Type (Employment, Freelance, Internship)
-  - Start Date and Duration/End Date
-  - Probation Period (if any)
+  **IMPORTANT: Format each piece of information with a semicolon (;) separator for easy parsing.**
 
-  ## Company Information
-  - Company Name
-  - Director Name
-  - Company Address (complete)
-  - Company Phone Number
-  - Company Email
-  - Company NPWP
+  Use this exact format structure:
 
-  ## Employee Information
-  - Employee Full Name
-  - Employee Position
-  - Employee Address (complete)
-  - Gender
-  - Date of Birth/Age
-  - Contract Type (PKWTT, PKWT)
-  - Employee ID Number (KTP/Passport)
-  - Employee Phone Number
-  - Employee Email
+  CONTRACT_NUMBER: [value];
+  CONTRACT_TITLE: [value];
+  EMPLOYMENT_TYPE: [value];
+  START_DATE: [DD/MM/YYYY];
+  DURATION: [value];
+  PROBATION_PERIOD: [value];
 
-  ## Job Details
-  - Job Description and Responsibilities
-  - Work Location/Office
-  - Work Schedule (days, hours)
-  - Break Time/Lunch Hours
-  - Leave/Vacation Policy
+  COMPANY_NAME: [value];
+  COMPANY_DIRECTOR: [value];
+  COMPANY_ADDRESS: [value];
+  COMPANY_PHONE: [value];
+  COMPANY_EMAIL: [value];
+  COMPANY_NPWP: [value];
 
-  ## Compensation & Benefits
-  - Basic Salary (monthly/yearly)
-  - Fixed Allowances (transport, meal, etc.)
-  - Variable Allowances (performance bonus, incentives)
-  - Social Security (BPJS Kesehatan, BPJS Ketenagakerjaan)
-  - Health Insurance
-  - Other Benefits (laptop, phone, car, training, etc.)
-  - Payment Schedule and Method
+  EMPLOYEE_NAME: [value];
+  EMPLOYEE_POSITION: [value];
+  EMPLOYEE_ADDRESS: [value];
+  EMPLOYEE_GENDER: [value];
+  EMPLOYEE_AGE: [value];
+  CONTRACT_TYPE: [PKWTT/PKWT];
+  EMPLOYEE_ID: [value];
+  EMPLOYEE_PHONE: [value];
+  EMPLOYEE_EMAIL: [value];
 
-  ## Legal & Compliance
-  - Confidentiality Clauses
-  - Non-compete Agreements
-  - Disciplinary Rules
-  - Termination Conditions
-  - Notice Period
-  - Severance Pay
-  - Dispute Resolution
+  JOB_DESCRIPTION: [value];
+  WORK_LOCATION: [value];
+  WORK_SCHEDULE: [value];
+  BREAK_TIME: [value];
+  LEAVE_POLICY: [value];
+  OVERTIME_POLICY: [value];
 
-  Format your response clearly with headers and bullet points. If information is not available, state "Not specified in document".
+  BASIC_SALARY: [value];
+  FIXED_ALLOWANCES: [value];
+  VARIABLE_ALLOWANCES: [value];
+  SOCIAL_SECURITY: [value];
+  HEALTH_INSURANCE: [value];
+  OTHER_BENEFITS: [value];
+  PAYMENT_SCHEDULE: [value];
+
+  CONFIDENTIALITY: [value];
+  NON_COMPETE: [value];
+  DISCIPLINARY_RULES: [value];
+  TERMINATION_CONDITIONS: [value];
+  NOTICE_PERIOD: [value];
+  SEVERANCE_PAY: [value];
+  DISPUTE_RESOLUTION: [value];
+
+  If any information is not found, use: "Not specified in document;"
 
   Focus on employment-specific terms and Indonesian labor law requirements.`;
 
     } else {
-      // Original partnership/general contract prompt
-      systemPrompt = `You are a contract data extraction specialist. Extract structured information from contract documents.
+      // Partnership contract with semicolon formatting
+      systemPrompt = `You are a contract data extraction specialist. Extract structured information from partnership/business contract documents.
 
-  Extract and organize the following information from the provided contract text:
+  Extract and organize the following information from the provided contract.
 
-  ## Contract Basics
-  - Contract Number
-  - Contract Title
-  - Contract Type (Partnership, Service, Supply, etc.)
-  - Start Date and Duration
-  - Contract Value/Amount
+  **IMPORTANT: Format each piece of information with a semicolon (;) separator for easy parsing.**
 
-  ## Party Information
-  For each party, extract:
-  - Company Name
-  - Director/Representative Name  
-  - Complete Address
-  - Phone Number
-  - Email Address
-  - NPWP (Tax ID)
-  - Business License Number
+  Use this exact format structure:
 
-  ## Service/Scope Details
-  - Type of Service/Business
-  - Detailed Service Description
-  - Operating Territory/Region
-  - Rights and Obligations of each party
-  - Service Terms and Conditions
+  CONTRACT_NUMBER: [value];
+  CONTRACT_TITLE: [value];
+  CONTRACT_TYPE: [Partnership/Service/Supply];
+  START_DATE: [DD/MM/YYYY];
+  DURATION: [value];
+  CONTRACT_VALUE: [value];
 
-  ## Financial Terms
-  - Contract Value/Amount
-  - Payment Terms and Conditions
-  - Payment Method (Bank, Account Details)
-  - Payment Schedule
-  - Late Payment Penalties
+  PARTY1_COMPANY: [value];
+  PARTY1_DIRECTOR: [value];
+  PARTY1_ADDRESS: [value];
+  PARTY1_PHONE: [value];
+  PARTY1_EMAIL: [value];
+  PARTY1_NPWP: [value];
+  PARTY1_LICENSE: [value];
 
-  ## Legal Terms
-  - Claim Deadlines
-  - Maximum Compensation
-  - Dispute Resolution Mechanism
-  - Force Majeure Clauses
+  PARTY2_COMPANY: [value];
+  PARTY2_DIRECTOR: [value];
+  PARTY2_ADDRESS: [value];
+  PARTY2_PHONE: [value];
+  PARTY2_EMAIL: [value];
+  PARTY2_NPWP: [value];
+  PARTY2_LICENSE: [value];
 
-  Format your response clearly with headers and bullet points. If information is not available, state "Not specified in document".
+  SERVICE_TYPE: [value];
+  SERVICE_DESCRIPTION: [value];
+  OPERATING_TERRITORY: [value];
+  PARTY1_OBLIGATIONS: [value];
+  PARTY2_OBLIGATIONS: [value];
+  SERVICE_TERMS: [value];
 
-  Be thorough but concise. Focus on extracting exact values and text from the document.`;
+  PAYMENT_TERMS: [value];
+  PAYMENT_METHOD: [value];
+  PAYMENT_SCHEDULE: [value];
+  LATE_PENALTIES: [value];
+
+  CLAIM_DEADLINE: [value];
+  MAX_COMPENSATION: [value];
+  DISPUTE_RESOLUTION: [value];
+  FORCE_MAJEURE: [value];
+
+  If any information is not found, use: "Not specified in document;"
+
+  Focus on extracting exact values and text from the document.`;
     }
 
     const userMessage = `Please extract structured contract information from this ${contractType} document:
 
   ${contractContent}
 
-  Provide a comprehensive extraction of all contract details in a clear, organized format suitable for ${contractType} contracts.`;
+  Provide a comprehensive extraction using the semicolon-separated format specified above.`;
 
     return this.makeRequest([
       { role: 'user', content: userMessage }

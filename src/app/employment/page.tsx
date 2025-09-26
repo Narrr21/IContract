@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useState, useRef } from 'react'
+import React, { useState, useRef, useEffect } from 'react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -22,115 +22,172 @@ interface EmploymentContractData {
   durasi: string
   
   // Identitas Pegawai
-  pegawai: {
-    nama: string
-    alamat: string
-    jabatan: string
-    jenisKelamin: string
-    usia: string
-    jenisKontrak: string // PKWT/PKWTT
-    nomorKTP: string
-    nomorTelp: string
-    email: string
-  }
+  namaLengkap: string
+  tempatLahir: string
+  tanggalLahir: Date | undefined
+  jenisKelamin: 'L' | 'P' | ''
+  alamatLengkap: string
+  nomorTelepon: string
+  email: string
+  pendidikanTerakhir: string
+  nomorIdentitas: string
+  jenisIdentitas: 'KTP' | 'Passport' | 'SIM' | ''
   
   // Identitas Perusahaan
-  perusahaan: {
-    namaPerusahaan: string
-    alamat: string
-    namaDirektur: string
-    nomorTelp: string
-    email: string
-    npwp: string
-  }
+  namaPerusahaan: string
+  alamatPerusahaan: string
+  nomorTeleponPerusahaan: string
+  emailPerusahaan: string
+  npwpPerusahaan: string
+  namaPimpinan: string
+  jabatanPimpinan: string
   
-  // Tanggung Jawab
-  tanggungJawab: {
-    jobdesk: string
-    tempatKerja: string
-    waktuKerja: string
-    istirahat: string
-    cuti: string
-    lembur: string
-  }
+  // Detail Pekerjaan
+  posisiJabatan: string
+  departemen: string
+  lokasiKerja: string
+  tanggalMulaiKerja: Date | undefined
+  jenisKontrak: 'PKWTT' | 'PKWT' | ''
+  masaPercobaan: string
+  deskripsiPekerjaan: string
   
-  // Hak dan Fasilitas
-  hakFasilitas: {
-    gajiPokok: string
-    tunjanganTetap: string
-    tunjanganTidakTetap: string
-    jaminanSosial: string
-    fasilitasLain: string
-  }
+  // Jam Kerja & Waktu
+  hariKerja: string
+  jamKerja: string
+  jamIstirahat: string
+  jamLembur: string
   
-  // Perlindungan Hukum dan Kerahasiaan
-  perlindunganHukum: {
-    kerahasiaan: string
-    disiplin: string
-    sanksi: string
-    pemutusanHubunganKerja: string
-  }
+  // Kompensasi & Tunjangan
+  gajiPokok: string
+  tunjanganTetap: string
+  tunjanganVariabel: string
+  metodePembayaran: string
+  jadwalPembayaran: string
+  
+  // Fasilitas & Benefit
+  bpjs: string
+  asuransiKesehatan: string
+  cuti: string
+  fasilitasLain: string
+  
+  // Hak & Kewajiban
+  hakPegawai: string
+  kewajibanPegawai: string
+  hakPerusahaan: string
+  kewajibanPerusahaan: string
+  
+  // Perlindungan Hukum
+  kerahasiaan: string
+  nonKompete: string
+  aturanDisiplin: string
+  keselamatanKerja: string
+  perlindunganData: string
+  sanksiPelanggaran: string
+  prosedurPenyelesaianSengketa: string
+  masaNotice: string
+  pesangonPHK: string
 }
 
 interface EmploymentPageProps {
   initialInputMethod?: 'manual' | 'upload'
   initialFile?: File | null
+  initialExtractedData?: EmploymentContractData | null
 }
 
-export default function EmploymentPage({ initialInputMethod, initialFile }: EmploymentPageProps) {
+export default function EmploymentPage({ initialInputMethod, initialFile, initialExtractedData }: EmploymentPageProps) {
   const [currentStep, setCurrentStep] = useState(initialInputMethod ? 1 : 0)
   const [inputMethod, setInputMethod] = useState<'manual' | 'upload' | null>(initialInputMethod || null)
   const [uploadedFile, setUploadedFile] = useState<File | null>(initialFile || null)
   const [isScanning, setIsScanning] = useState(false)
   const [scanProgress, setScanProgress] = useState(0)
   const fileInputRef = useRef<HTMLInputElement>(null)
+  
   const [contractData, setContractData] = useState<EmploymentContractData>({
+    // Informasi Umum Perjanjian
     nomorKontrak: '',
     judul: '',
     jenis: 'EMPLOYMENT',
     tanggalMulai: undefined,
     durasi: '',
-    pegawai: {
-      nama: '',
-      alamat: '',
-      jabatan: '',
-      jenisKelamin: '',
-      usia: '',
-      jenisKontrak: '',
-      nomorKTP: '',
-      nomorTelp: '',
-      email: ''
-    },
-    perusahaan: {
-      namaPerusahaan: '',
-      alamat: '',
-      namaDirektur: '',
-      nomorTelp: '',
-      email: '',
-      npwp: ''
-    },
-    tanggungJawab: {
-      jobdesk: '',
-      tempatKerja: '',
-      waktuKerja: '',
-      istirahat: '',
-      cuti: '',
-      lembur: ''
-    },
-    hakFasilitas: {
-      gajiPokok: '',
-      tunjanganTetap: '',
-      tunjanganTidakTetap: '',
-      jaminanSosial: '',
-      fasilitasLain: ''
-    },
-    perlindunganHukum: {
-      kerahasiaan: '',
-      disiplin: '',
-      sanksi: '',
-      pemutusanHubunganKerja: ''
-    }
+    
+    // Identitas Pegawai
+    namaLengkap: '',
+    tempatLahir: '',
+    tanggalLahir: undefined,
+    jenisKelamin: '',
+    alamatLengkap: '',
+    nomorTelepon: '',
+    email: '',
+    pendidikanTerakhir: '',
+    nomorIdentitas: '',
+    jenisIdentitas: '',
+    
+    // Identitas Perusahaan
+    namaPerusahaan: '',
+    alamatPerusahaan: '',
+    nomorTeleponPerusahaan: '',
+    emailPerusahaan: '',
+    npwpPerusahaan: '',
+    namaPimpinan: '',
+    jabatanPimpinan: '',
+    
+    // Detail Pekerjaan
+    posisiJabatan: '',
+    departemen: '',
+    lokasiKerja: '',
+    tanggalMulaiKerja: undefined,
+    jenisKontrak: '',
+    masaPercobaan: '',
+    deskripsiPekerjaan: '',
+    
+    // Jam Kerja & Waktu
+    hariKerja: '',
+    jamKerja: '',
+    jamIstirahat: '',
+    jamLembur: '',
+    
+    // Kompensasi & Tunjangan
+    gajiPokok: '',
+    tunjanganTetap: '',
+    tunjanganVariabel: '',
+    metodePembayaran: '',
+    jadwalPembayaran: '',
+    
+    // Fasilitas & Benefit
+    bpjs: '',
+    asuransiKesehatan: '',
+    cuti: '',
+    fasilitasLain: '',
+    
+    // Hak & Kewajiban
+    hakPegawai: '',
+    kewajibanPegawai: '',
+    hakPerusahaan: '',
+    kewajibanPerusahaan: '',
+    
+    // Perlindungan Hukum
+    kerahasiaan: '',
+    nonKompete: '',
+    aturanDisiplin: '',
+    keselamatanKerja: '',
+    perlindunganData: '',
+    sanksiPelanggaran: '',
+    prosedurPenyelesaianSengketa: '',
+    masaNotice: '',
+    pesangonPHK: ''
   })
+
+  // Load initial extracted data if provided
+  useEffect(() => {
+    if (initialExtractedData) {
+      console.log('📥 Loading initial extracted data:', initialExtractedData);
+      setContractData(initialExtractedData);
+      // If we have uploaded data, skip to step 1
+      if (initialInputMethod === 'upload' && initialFile) {
+        setCurrentStep(1);
+      }
+    }
+  }, [initialExtractedData, initialInputMethod, initialFile]);
 
   const steps = [
     'Pilih Metode Input',
@@ -141,32 +198,20 @@ export default function EmploymentPage({ initialInputMethod, initialFile }: Empl
     'Perlindungan Hukum'
   ]
 
-  const handleInputChange = (field: string, value: any, section?: string) => {
-    if (section) {
-      setContractData(prev => ({
-        ...prev,
-        [section]: {
-          ...(prev[section as keyof EmploymentContractData] as any),
-          [field]: value
-        }
-      }))
-    } else {
-      setContractData(prev => ({
-        ...prev,
-        [field]: value
-      }))
-    }
+  const handleInputChange = (field: string, value: any) => {
+    setContractData(prev => ({
+      ...prev,
+      [field]: value
+    }))
   }
 
   const isFieldDisabled = () => {
-    // return inputMethod === 'upload' && uploadedFile !== null
-    return false // Always allow
+    return false // Always allow editing
   }
 
   const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0]
     if (!file) return
-
     await processFile(file)
   }
 
@@ -176,7 +221,6 @@ export default function EmploymentPage({ initialInputMethod, initialFile }: Empl
       return
     }
 
-    // Check file size (10MB limit)
     if (file.size > 10 * 1024 * 1024) {
       alert('Ukuran file terlalu besar! Maksimal 10MB.')
       return
@@ -209,7 +253,6 @@ export default function EmploymentPage({ initialInputMethod, initialFile }: Empl
       setScanProgress(100)
       setTimeout(() => {
         setIsScanning(false)
-        // Auto advance to next step after successful scan
         setCurrentStep(1)
       }, 500)
 
@@ -236,12 +279,12 @@ export default function EmploymentPage({ initialInputMethod, initialFile }: Empl
     }
 
     const result = await response.json()
-    
-    // Convert the API response to EmploymentContractData format
     const data = result.data
     return {
       ...data,
-      tanggalMulai: data.tanggalMulai ? new Date(data.tanggalMulai) : undefined
+      tanggalMulai: data.tanggalMulai ? new Date(data.tanggalMulai) : undefined,
+      tanggalLahir: data.tanggalLahir ? new Date(data.tanggalLahir) : undefined,
+      tanggalMulaiKerja: data.tanggalMulaiKerja ? new Date(data.tanggalMulaiKerja) : undefined,
     }
   }
 
@@ -255,6 +298,24 @@ export default function EmploymentPage({ initialInputMethod, initialFile }: Empl
     if (currentStep > 0) {
       setCurrentStep(currentStep - 1)
     }
+  }
+
+  const resetForm = () => {
+    setContractData({
+      nomorKontrak: '', judul: '', jenis: 'EMPLOYMENT', tanggalMulai: undefined, durasi: '',
+      namaLengkap: '', tempatLahir: '', tanggalLahir: undefined, jenisKelamin: '', alamatLengkap: '',
+      nomorTelepon: '', email: '', pendidikanTerakhir: '', nomorIdentitas: '', jenisIdentitas: '',
+      namaPerusahaan: '', alamatPerusahaan: '', nomorTeleponPerusahaan: '', emailPerusahaan: '',
+      npwpPerusahaan: '', namaPimpinan: '', jabatanPimpinan: '', posisiJabatan: '', departemen: '',
+      lokasiKerja: '', tanggalMulaiKerja: undefined, jenisKontrak: '', masaPercobaan: '',
+      deskripsiPekerjaan: '', hariKerja: '', jamKerja: '', jamIstirahat: '', jamLembur: '',
+      gajiPokok: '', tunjanganTetap: '', tunjanganVariabel: '', metodePembayaran: '',
+      jadwalPembayaran: '', bpjs: '', asuransiKesehatan: '', cuti: '', fasilitasLain: '',
+      hakPegawai: '', kewajibanPegawai: '', hakPerusahaan: '', kewajibanPerusahaan: '',
+      kerahasiaan: '', nonKompete: '', aturanDisiplin: '', keselamatanKerja: '',
+      perlindunganData: '', sanksiPelanggaran: '', prosedurPenyelesaianSengketa: '',
+      masaNotice: '', pesangonPHK: ''
+    })
   }
 
   return (
@@ -422,54 +483,7 @@ export default function EmploymentPage({ initialInputMethod, initialFile }: Empl
                             onClick={() => {
                               setUploadedFile(null)
                               setInputMethod(null)
-                              // Reset contract data to empty state
-                              setContractData({
-                                nomorKontrak: '',
-                                judul: '',
-                                jenis: 'EMPLOYMENT',
-                                tanggalMulai: undefined,
-                                durasi: '',
-                                pegawai: {
-                                  nama: '',
-                                  alamat: '',
-                                  jabatan: '',
-                                  jenisKelamin: '',
-                                  usia: '',
-                                  jenisKontrak: '',
-                                  nomorKTP: '',
-                                  nomorTelp: '',
-                                  email: ''
-                                },
-                                perusahaan: {
-                                  namaPerusahaan: '',
-                                  alamat: '',
-                                  namaDirektur: '',
-                                  nomorTelp: '',
-                                  email: '',
-                                  npwp: ''
-                                },
-                                tanggungJawab: {
-                                  jobdesk: '',
-                                  tempatKerja: '',
-                                  waktuKerja: '',
-                                  istirahat: '',
-                                  cuti: '',
-                                  lembur: ''
-                                },
-                                hakFasilitas: {
-                                  gajiPokok: '',
-                                  tunjanganTetap: '',
-                                  tunjanganTidakTetap: '',
-                                  jaminanSosial: '',
-                                  fasilitasLain: ''
-                                },
-                                perlindunganHukum: {
-                                  kerahasiaan: '',
-                                  disiplin: '',
-                                  sanksi: '',
-                                  pemutusanHubunganKerja: ''
-                                }
-                              })
+                              resetForm()
                             }}
                           >
                             Hapus & Mulai Ulang
@@ -489,7 +503,7 @@ export default function EmploymentPage({ initialInputMethod, initialFile }: Empl
           {/* Step 1: Informasi Umum */}
           {currentStep === 1 && (
             <div className="space-y-6">
-              {isFieldDisabled() && (
+              {initialExtractedData && (
                 <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg">
                   <div className="flex items-center">
                     <FileText className="w-5 h-5 text-blue-600 mr-2" />
@@ -498,10 +512,11 @@ export default function EmploymentPage({ initialInputMethod, initialFile }: Empl
                     </p>
                   </div>
                   <p className="text-blue-600 text-sm mt-1">
-                    Anda dapat meninjau data di bawah ini. Field tidak dapat diedit karena data berasal dari scan dokumen.
+                    Anda dapat mengedit data sesuai kebutuhan.
                   </p>
                 </div>
               )}
+              
               <div className="grid md:grid-cols-2 gap-6">
                 <div>
                   <Label htmlFor="nomorKontrak">Nomor Kontrak</Label>
@@ -578,65 +593,78 @@ export default function EmploymentPage({ initialInputMethod, initialFile }: Empl
                     <Label htmlFor="namaPerusahaan">Nama Perusahaan</Label>
                     <Input 
                       id="namaPerusahaan"
-                      value={contractData.perusahaan.namaPerusahaan}
-                      onChange={(e) => handleInputChange('namaPerusahaan', e.target.value, 'perusahaan')}
+                      value={contractData.namaPerusahaan}
+                      onChange={(e) => handleInputChange('namaPerusahaan', e.target.value)}
                       placeholder="Nama perusahaan"
                       disabled={isFieldDisabled()}
                     />
                   </div>
                   <div>
-                    <Label htmlFor="namaDirektur">Nama Direktur/Pimpinan</Label>
+                    <Label htmlFor="namaPimpinan">Nama Pimpinan</Label>
                     <Input 
-                      id="namaDirektur"
-                      value={contractData.perusahaan.namaDirektur}
-                      onChange={(e) => handleInputChange('namaDirektur', e.target.value, 'perusahaan')}
-                      placeholder="Nama direktur/pimpinan"
+                      id="namaPimpinan"
+                      value={contractData.namaPimpinan}
+                      onChange={(e) => handleInputChange('namaPimpinan', e.target.value)}
+                      placeholder="Nama pimpinan perusahaan"
                       disabled={isFieldDisabled()}
                     />
                   </div>
                 </div>
                 
+                <div className="grid md:grid-cols-2 gap-6">
+                  <div>
+                    <Label htmlFor="jabatanPimpinan">Jabatan Pimpinan</Label>
+                    <Input 
+                      id="jabatanPimpinan"
+                      value={contractData.jabatanPimpinan}
+                      onChange={(e) => handleInputChange('jabatanPimpinan', e.target.value)}
+                      placeholder="Contoh: Direktur Utama"
+                      disabled={isFieldDisabled()}
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="npwpPerusahaan">NPWP Perusahaan</Label>
+                    <Input 
+                      id="npwpPerusahaan"
+                      value={contractData.npwpPerusahaan}
+                      onChange={(e) => handleInputChange('npwpPerusahaan', e.target.value)}
+                      placeholder="NPWP perusahaan"
+                      disabled={isFieldDisabled()}
+                    />
+                  </div>
+                </div>
+
                 <div>
                   <Label htmlFor="alamatPerusahaan">Alamat Perusahaan</Label>
                   <Textarea 
                     id="alamatPerusahaan"
-                    value={contractData.perusahaan.alamat}
-                    onChange={(e) => handleInputChange('alamat', e.target.value, 'perusahaan')}
+                    value={contractData.alamatPerusahaan}
+                    onChange={(e) => handleInputChange('alamatPerusahaan', e.target.value)}
                     rows={3}
                     placeholder="Alamat lengkap perusahaan"
                     disabled={isFieldDisabled()}
                   />
                 </div>
 
-                <div className="grid md:grid-cols-3 gap-6">
+                <div className="grid md:grid-cols-2 gap-6">
                   <div>
-                    <Label htmlFor="nomorTelpPerusahaan">Nomor Telepon</Label>
+                    <Label htmlFor="nomorTelefonPerusahaan">Nomor Telepon</Label>
                     <Input 
-                      id="nomorTelpPerusahaan"
-                      value={contractData.perusahaan.nomorTelp}
-                      onChange={(e) => handleInputChange('nomorTelp', e.target.value, 'perusahaan')}
+                      id="nomorTelefonPerusahaan"
+                      value={contractData.nomorTeleponPerusahaan}
+                      onChange={(e) => handleInputChange('nomorTelefonPerusahaan', e.target.value)}
                       placeholder="Nomor telepon perusahaan"
                       disabled={isFieldDisabled()}
                     />
                   </div>
                   <div>
-                    <Label htmlFor="emailPerusahaan">Email</Label>
+                    <Label htmlFor="emailPerusahaan">Email Perusahaan</Label>
                     <Input 
                       id="emailPerusahaan"
                       type="email"
-                      value={contractData.perusahaan.email}
-                      onChange={(e) => handleInputChange('email', e.target.value, 'perusahaan')}
+                      value={contractData.emailPerusahaan}
+                      onChange={(e) => handleInputChange('emailPerusahaan', e.target.value)}
                       placeholder="Email perusahaan"
-                      disabled={isFieldDisabled()}
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="npwpPerusahaan">NPWP</Label>
-                    <Input 
-                      id="npwpPerusahaan"
-                      value={contractData.perusahaan.npwp}
-                      onChange={(e) => handleInputChange('npwp', e.target.value, 'perusahaan')}
-                      placeholder="NPWP perusahaan"
                       disabled={isFieldDisabled()}
                     />
                   </div>
@@ -648,46 +676,68 @@ export default function EmploymentPage({ initialInputMethod, initialFile }: Empl
           {/* Step 2: Identitas Pegawai */}
           {currentStep === 2 && (
             <div className="space-y-6">
-              {isFieldDisabled() && (
-                <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg">
-                  <div className="flex items-center">
-                    <FileText className="w-5 h-5 text-blue-600 mr-2" />
-                    <p className="text-blue-800 font-medium">
-                      Data identitas pegawai telah diisi otomatis dari dokumen PDF
-                    </p>
-                  </div>
-                </div>
-              )}
-              
               <div className="grid md:grid-cols-2 gap-6">
                 <div>
-                  <Label htmlFor="namaPegawai">Nama Lengkap</Label>
+                  <Label htmlFor="namaLengkap">Nama Lengkap</Label>
                   <Input 
-                    id="namaPegawai"
-                    value={contractData.pegawai.nama}
-                    onChange={(e) => handleInputChange('nama', e.target.value, 'pegawai')}
+                    id="namaLengkap"
+                    value={contractData.namaLengkap}
+                    onChange={(e) => handleInputChange('namaLengkap', e.target.value)}
                     placeholder="Nama lengkap pegawai"
                     disabled={isFieldDisabled()}
                   />
                 </div>
                 <div>
-                  <Label htmlFor="jabatan">Jabatan</Label>
+                  <Label htmlFor="tempatLahir">Tempat Lahir</Label>
                   <Input 
-                    id="jabatan"
-                    value={contractData.pegawai.jabatan}
-                    onChange={(e) => handleInputChange('jabatan', e.target.value, 'pegawai')}
-                    placeholder="Jabatan/posisi"
+                    id="tempatLahir"
+                    value={contractData.tempatLahir}
+                    onChange={(e) => handleInputChange('tempatLahir', e.target.value)}
+                    placeholder="Tempat lahir"
                     disabled={isFieldDisabled()}
                   />
                 </div>
               </div>
-              
+
+              <div className="grid md:grid-cols-2 gap-6">
+                <div>
+                  <Label>Tanggal Lahir</Label>
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <Button variant="outline" className="w-full justify-start text-left font-normal" disabled={isFieldDisabled()}>
+                        <CalendarIcon className="mr-2 h-4 w-4" />
+                        {contractData.tanggalLahir ? format(contractData.tanggalLahir, "dd/MM/yyyy") : "Pilih tanggal lahir"}
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-auto p-0">
+                      <Calendar
+                        mode="single"
+                        selected={contractData.tanggalLahir}
+                        onSelect={(date) => handleInputChange('tanggalLahir', date)}
+                      />
+                    </PopoverContent>
+                  </Popover>
+                </div>
+                <div>
+                  <Label htmlFor="jenisKelamin">Jenis Kelamin</Label>
+                  <Select value={contractData.jenisKelamin} onValueChange={(value) => handleInputChange('jenisKelamin', value)} disabled={isFieldDisabled()}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Pilih jenis kelamin" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="L">Laki-laki</SelectItem>
+                      <SelectItem value="P">Perempuan</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+
               <div>
-                <Label htmlFor="alamatPegawai">Alamat</Label>
+                <Label htmlFor="alamatLengkap">Alamat Lengkap</Label>
                 <Textarea 
-                  id="alamatPegawai"
-                  value={contractData.pegawai.alamat}
-                  onChange={(e) => handleInputChange('alamat', e.target.value, 'pegawai')}
+                  id="alamatLengkap"
+                  value={contractData.alamatLengkap}
+                  onChange={(e) => handleInputChange('alamatLengkap', e.target.value)}
                   rows={3}
                   placeholder="Alamat lengkap pegawai"
                   disabled={isFieldDisabled()}
@@ -696,30 +746,127 @@ export default function EmploymentPage({ initialInputMethod, initialFile }: Empl
 
               <div className="grid md:grid-cols-3 gap-6">
                 <div>
-                  <Label htmlFor="jenisKelamin">Jenis Kelamin</Label>
-                  <Select value={contractData.pegawai.jenisKelamin} onValueChange={(value) => handleInputChange('jenisKelamin', value, 'pegawai')} disabled={isFieldDisabled()}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Pilih jenis kelamin" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="Laki-laki">Laki-laki</SelectItem>
-                      <SelectItem value="Perempuan">Perempuan</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div>
-                  <Label htmlFor="usia">Usia</Label>
+                  <Label htmlFor="nomorTelepon">Nomor Telepon</Label>
                   <Input 
-                    id="usia"
-                    value={contractData.pegawai.usia}
-                    onChange={(e) => handleInputChange('usia', e.target.value, 'pegawai')}
-                    placeholder="Contoh: 25 tahun"
+                    id="nomorTelepon"
+                    value={contractData.nomorTelepon}
+                    onChange={(e) => handleInputChange('nomorTelepon', e.target.value)}
+                    placeholder="Nomor telepon"
                     disabled={isFieldDisabled()}
                   />
                 </div>
                 <div>
+                  <Label htmlFor="email">Email</Label>
+                  <Input 
+                    id="email"
+                    type="email"
+                    value={contractData.email}
+                    onChange={(e) => handleInputChange('email', e.target.value)}
+                    placeholder="Email pegawai"
+                    disabled={isFieldDisabled()}
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="pendidikanTerakhir">Pendidikan Terakhir</Label>
+                  <Input 
+                    id="pendidikanTerakhir"
+                    value={contractData.pendidikanTerakhir}
+                    onChange={(e) => handleInputChange('pendidikanTerakhir', e.target.value)}
+                    placeholder="Contoh: S1 Teknik Informatika"
+                    disabled={isFieldDisabled()}
+                  />
+                </div>
+              </div>
+
+              <div className="grid md:grid-cols-2 gap-6">
+                <div>
+                  <Label htmlFor="jenisIdentitas">Jenis Identitas</Label>
+                  <Select value={contractData.jenisIdentitas} onValueChange={(value) => handleInputChange('jenisIdentitas', value)} disabled={isFieldDisabled()}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Pilih jenis identitas" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="KTP">KTP</SelectItem>
+                      <SelectItem value="Passport">Passport</SelectItem>
+                      <SelectItem value="SIM">SIM</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div>
+                  <Label htmlFor="nomorIdentitas">Nomor Identitas</Label>
+                  <Input 
+                    id="nomorIdentitas"
+                    value={contractData.nomorIdentitas}
+                    onChange={(e) => handleInputChange('nomorIdentitas', e.target.value)}
+                    placeholder="Nomor identitas"
+                    disabled={isFieldDisabled()}
+                  />
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Step 3: Detail Pekerjaan */}
+          {currentStep === 3 && (
+            <div className="space-y-6">
+              <div className="grid md:grid-cols-2 gap-6">
+                <div>
+                  <Label htmlFor="posisiJabatan">Posisi/Jabatan</Label>
+                  <Input 
+                    id="posisiJabatan"
+                    value={contractData.posisiJabatan}
+                    onChange={(e) => handleInputChange('posisiJabatan', e.target.value)}
+                    placeholder="Contoh: Software Developer"
+                    disabled={isFieldDisabled()}
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="departemen">Departemen</Label>
+                  <Input 
+                    id="departemen"
+                    value={contractData.departemen}
+                    onChange={(e) => handleInputChange('departemen', e.target.value)}
+                    placeholder="Contoh: IT Department"
+                    disabled={isFieldDisabled()}
+                  />
+                </div>
+              </div>
+
+              <div className="grid md:grid-cols-2 gap-6">
+                <div>
+                  <Label htmlFor="lokasiKerja">Lokasi Kerja</Label>
+                  <Input 
+                    id="lokasiKerja"
+                    value={contractData.lokasiKerja}
+                    onChange={(e) => handleInputChange('lokasiKerja', e.target.value)}
+                    placeholder="Contoh: Jakarta Selatan"
+                    disabled={isFieldDisabled()}
+                  />
+                </div>
+                <div>
+                  <Label>Tanggal Mulai Kerja</Label>
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <Button variant="outline" className="w-full justify-start text-left font-normal" disabled={isFieldDisabled()}>
+                        <CalendarIcon className="mr-2 h-4 w-4" />
+                        {contractData.tanggalMulaiKerja ? format(contractData.tanggalMulaiKerja, "dd/MM/yyyy") : "Pilih tanggal mulai kerja"}
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-auto p-0">
+                      <Calendar
+                        mode="single"
+                        selected={contractData.tanggalMulaiKerja}
+                        onSelect={(date) => handleInputChange('tanggalMulaiKerja', date)}
+                      />
+                    </PopoverContent>
+                  </Popover>
+                </div>
+              </div>
+
+              <div className="grid md:grid-cols-2 gap-6">
+                <div>
                   <Label htmlFor="jenisKontrak">Jenis Kontrak</Label>
-                  <Select value={contractData.pegawai.jenisKontrak} onValueChange={(value) => handleInputChange('jenisKontrak', value, 'pegawai')} disabled={isFieldDisabled()}>
+                  <Select value={contractData.jenisKontrak} onValueChange={(value) => handleInputChange('jenisKontrak', value)} disabled={isFieldDisabled()}>
                     <SelectTrigger>
                       <SelectValue placeholder="Pilih jenis kontrak" />
                     </SelectTrigger>
@@ -729,129 +876,93 @@ export default function EmploymentPage({ initialInputMethod, initialFile }: Empl
                     </SelectContent>
                   </Select>
                 </div>
-              </div>
-
-              <div className="grid md:grid-cols-3 gap-6">
                 <div>
-                  <Label htmlFor="nomorKTP">Nomor KTP</Label>
+                  <Label htmlFor="masaPercobaan">Masa Percobaan</Label>
                   <Input 
-                    id="nomorKTP"
-                    value={contractData.pegawai.nomorKTP}
-                    onChange={(e) => handleInputChange('nomorKTP', e.target.value, 'pegawai')}
-                    placeholder="Nomor KTP"
-                    disabled={isFieldDisabled()}
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="nomorTelpPegawai">Nomor Telepon</Label>
-                  <Input 
-                    id="nomorTelpPegawai"
-                    value={contractData.pegawai.nomorTelp}
-                    onChange={(e) => handleInputChange('nomorTelp', e.target.value, 'pegawai')}
-                    placeholder="Nomor telepon pegawai"
-                    disabled={isFieldDisabled()}
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="emailPegawai">Email</Label>
-                  <Input 
-                    id="emailPegawai"
-                    type="email"
-                    value={contractData.pegawai.email}
-                    onChange={(e) => handleInputChange('email', e.target.value, 'pegawai')}
-                    placeholder="Email pegawai"
+                    id="masaPercobaan"
+                    value={contractData.masaPercobaan}
+                    onChange={(e) => handleInputChange('masaPercobaan', e.target.value)}
+                    placeholder="Contoh: 3 bulan"
                     disabled={isFieldDisabled()}
                   />
                 </div>
               </div>
-            </div>
-          )}
 
-          {/* Step 3: Tanggung Jawab */}
-          {currentStep === 3 && (
-            <div className="space-y-6">
               <div>
-                <Label htmlFor="jobdesk">Job Description & Tanggung Jawab</Label>
+                <Label htmlFor="deskripsiPekerjaan">Deskripsi Pekerjaan</Label>
                 <Textarea 
-                  id="jobdesk"
-                  value={contractData.tanggungJawab.jobdesk}
-                  onChange={(e) => handleInputChange('jobdesk', e.target.value, 'tanggungJawab')}
+                  id="deskripsiPekerjaan"
+                  value={contractData.deskripsiPekerjaan}
+                  onChange={(e) => handleInputChange('deskripsiPekerjaan', e.target.value)}
                   rows={5}
-                  placeholder="Jelaskan secara detail job description dan tanggung jawab pegawai..."
-                  disabled={isFieldDisabled()}
-                />
-              </div>
-
-              <div className="grid md:grid-cols-2 gap-6">
-                <div>
-                  <Label htmlFor="tempatKerja">Tempat Kerja</Label>
-                  <Input 
-                    id="tempatKerja"
-                    value={contractData.tanggungJawab.tempatKerja}
-                    onChange={(e) => handleInputChange('tempatKerja', e.target.value, 'tanggungJawab')}
-                    placeholder="Contoh: Kantor Pusat Jakarta"
-                    disabled={isFieldDisabled()}
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="waktuKerja">Waktu Kerja</Label>
-                  <Input 
-                    id="waktuKerja"
-                    value={contractData.tanggungJawab.waktuKerja}
-                    onChange={(e) => handleInputChange('waktuKerja', e.target.value, 'tanggungJawab')}
-                    placeholder="Contoh: Senin-Jumat, 08:00-17:00"
-                    disabled={isFieldDisabled()}
-                  />
-                </div>
-              </div>
-
-              <div className="grid md:grid-cols-2 gap-6">
-                <div>
-                  <Label htmlFor="istirahat">Waktu Istirahat</Label>
-                  <Input 
-                    id="istirahat"
-                    value={contractData.tanggungJawab.istirahat}
-                    onChange={(e) => handleInputChange('istirahat', e.target.value, 'tanggungJawab')}
-                    placeholder="Contoh: 12:00-13:00"
-                    disabled={isFieldDisabled()}
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="cuti">Ketentuan Cuti</Label>
-                  <Input 
-                    id="cuti"
-                    value={contractData.tanggungJawab.cuti}
-                    onChange={(e) => handleInputChange('cuti', e.target.value, 'tanggungJawab')}
-                    placeholder="Contoh: 12 hari per tahun"
-                    disabled={isFieldDisabled()}
-                  />
-                </div>
-              </div>
-
-              <div>
-                <Label htmlFor="lembur">Ketentuan Lembur</Label>
-                <Textarea 
-                  id="lembur"
-                  value={contractData.tanggungJawab.lembur}
-                  onChange={(e) => handleInputChange('lembur', e.target.value, 'tanggungJawab')}
-                  rows={3}
-                  placeholder="Jelaskan ketentuan lembur, kompensasi, dan batas maksimal lembur..."
+                  placeholder="Jelaskan secara detail tanggung jawab dan tugas pekerjaan..."
                   disabled={isFieldDisabled()}
                 />
               </div>
             </div>
           )}
 
-          {/* Step 4: Hak dan Fasilitas */}
+          {/* Step 4: Jam Kerja & Waktu */}
           {currentStep === 4 && (
+            <div className="space-y-6">
+              <div className="grid md:grid-cols-2 gap-6">
+                <div>
+                  <Label htmlFor="hariKerja">Hari Kerja</Label>
+                  <Input 
+                    id="hariKerja"
+                    value={contractData.hariKerja}
+                    onChange={(e) => handleInputChange('hariKerja', e.target.value)}
+                    placeholder="Contoh: Senin - Jumat"
+                    disabled={isFieldDisabled()}
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="jamKerja">Jam Kerja</Label>
+                  <Input 
+                    id="jamKerja"
+                    value={contractData.jamKerja}
+                    onChange={(e) => handleInputChange('jamKerja', e.target.value)}
+                    placeholder="Contoh: 08:00 - 17:00"
+                    disabled={isFieldDisabled()}
+                  />
+                </div>
+              </div>
+
+              <div className="grid md:grid-cols-2 gap-6">
+                <div>
+                  <Label htmlFor="jamIstirahat">Jam Istirahat</Label>
+                  <Input 
+                    id="jamIstirahat"
+                    value={contractData.jamIstirahat}
+                    onChange={(e) => handleInputChange('jamIstirahat', e.target.value)}
+                    placeholder="Contoh: 12:00 - 13:00"
+                    disabled={isFieldDisabled()}
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="jamLembur">Ketentuan Jam Lembur</Label>
+                  <Input 
+                    id="jamLembur"
+                    value={contractData.jamLembur}
+                    onChange={(e) => handleInputChange('jamLembur', e.target.value)}
+                    placeholder="Contoh: Maksimal 3 jam/hari"
+                    disabled={isFieldDisabled()}
+                  />
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Step 5: Kompensasi & Tunjangan */}
+          {currentStep === 5 && (
             <div className="space-y-6">
               <div className="grid md:grid-cols-2 gap-6">
                 <div>
                   <Label htmlFor="gajiPokok">Gaji Pokok</Label>
                   <Input 
                     id="gajiPokok"
-                    value={contractData.hakFasilitas.gajiPokok}
-                    onChange={(e) => handleInputChange('gajiPokok', e.target.value, 'hakFasilitas')}
+                    value={contractData.gajiPokok}
+                    onChange={(e) => handleInputChange('gajiPokok', e.target.value)}
                     placeholder="Contoh: Rp 8.000.000"
                     disabled={isFieldDisabled()}
                   />
@@ -860,101 +971,273 @@ export default function EmploymentPage({ initialInputMethod, initialFile }: Empl
                   <Label htmlFor="tunjanganTetap">Tunjangan Tetap</Label>
                   <Input 
                     id="tunjanganTetap"
-                    value={contractData.hakFasilitas.tunjanganTetap}
-                    onChange={(e) => handleInputChange('tunjanganTetap', e.target.value, 'hakFasilitas')}
-                    placeholder="Contoh: Tunjangan transportasi, makan"
+                    value={contractData.tunjanganTetap}
+                    onChange={(e) => handleInputChange('tunjanganTetap', e.target.value)}
+                    placeholder="Contoh: Tunjangan transportasi Rp 1.000.000"
                     disabled={isFieldDisabled()}
                   />
                 </div>
               </div>
 
               <div>
-                <Label htmlFor="tunjanganTidakTetap">Tunjangan Tidak Tetap</Label>
+                <Label htmlFor="tunjanganVariabel">Tunjangan Variabel</Label>
                 <Textarea 
-                  id="tunjanganTidakTetap"
-                  value={contractData.hakFasilitas.tunjanganTidakTetap}
-                  onChange={(e) => handleInputChange('tunjanganTidakTetap', e.target.value, 'hakFasilitas')}
+                  id="tunjanganVariabel"
+                  value={contractData.tunjanganVariabel}
+                  onChange={(e) => handleInputChange('tunjanganVariabel', e.target.value)}
                   rows={3}
                   placeholder="Jelaskan tunjangan tidak tetap seperti bonus, insentif, THR, dll..."
                   disabled={isFieldDisabled()}
                 />
               </div>
 
-              <div>
-                <Label htmlFor="jaminanSosial">Jaminan Sosial</Label>
-                <Textarea 
-                  id="jaminanSosial"
-                  value={contractData.hakFasilitas.jaminanSosial}
-                  onChange={(e) => handleInputChange('jaminanSosial', e.target.value, 'hakFasilitas')}
-                  rows={3}
-                  placeholder="Jelaskan jaminan sosial yang diberikan (BPJS Kesehatan, BPJS Ketenagakerjaan, dll)..."
-                  disabled={isFieldDisabled()}
-                />
-              </div>
-
-              <div>
-                <Label htmlFor="fasilitasLain">Fasilitas Lain</Label>
-                <Textarea 
-                  id="fasilitasLain"
-                  value={contractData.hakFasilitas.fasilitasLain}
-                  onChange={(e) => handleInputChange('fasilitasLain', e.target.value, 'hakFasilitas')}
-                  rows={4}
-                  placeholder="Jelaskan fasilitas lain seperti laptop, kendaraan dinas, training, asuransi kesehatan tambahan, dll..."
-                  disabled={isFieldDisabled()}
-                />
+              <div className="grid md:grid-cols-2 gap-6">
+                <div>
+                  <Label htmlFor="metodePembayaran">Metode Pembayaran</Label>
+                  <Input 
+                    id="metodePembayaran"
+                    value={contractData.metodePembayaran}
+                    onChange={(e) => handleInputChange('metodePembayaran', e.target.value)}
+                    placeholder="Contoh: Transfer Bank"
+                    disabled={isFieldDisabled()}
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="jadwalPembayaran">Jadwal Pembayaran</Label>
+                  <Input 
+                    id="jadwalPembayaran"
+                    value={contractData.jadwalPembayaran}
+                    onChange={(e) => handleInputChange('jadwalPembayaran', e.target.value)}
+                    placeholder="Contoh: Setiap tanggal 25"
+                    disabled={isFieldDisabled()}
+                  />
+                </div>
               </div>
             </div>
           )}
 
-          {/* Step 5: Perlindungan Hukum dan Kerahasiaan */}
-          {currentStep === 5 && (
+          {/* Step 6: Fasilitas & Benefit */}
+          {currentStep === 6 && (
             <div className="space-y-6">
-              <div>
-                <Label htmlFor="kerahasiaan">Perlindungan Hukum dan Kerahasiaan</Label>
-                <Textarea 
-                  id="kerahasiaan"
-                  value={contractData.perlindunganHukum.kerahasiaan}
-                  onChange={(e) => handleInputChange('kerahasiaan', e.target.value, 'perlindunganHukum')}
-                  rows={4}
-                  placeholder="Jelaskan ketentuan kerahasiaan data perusahaan, klien, dan informasi penting lainnya..."
-                  disabled={isFieldDisabled()}
-                />
+              <div className="grid md:grid-cols-2 gap-6">
+                <div>
+                  <Label htmlFor="bpjs">BPJS</Label>
+                  <Textarea 
+                    id="bpjs"
+                    value={contractData.bpjs}
+                    onChange={(e) => handleInputChange('bpjs', e.target.value)}
+                    rows={3}
+                    placeholder="Jelaskan BPJS Kesehatan dan Ketenagakerjaan yang disediakan..."
+                    disabled={isFieldDisabled()}
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="asuransiKesehatan">Asuransi Kesehatan</Label>
+                  <Textarea 
+                    id="asuransiKesehatan"
+                    value={contractData.asuransiKesehatan}
+                    onChange={(e) => handleInputChange('asuransiKesehatan', e.target.value)}
+                    rows={3}
+                    placeholder="Jelaskan asuransi kesehatan tambahan jika ada..."
+                    disabled={isFieldDisabled()}
+                  />
+                </div>
               </div>
 
-              <div>
-                <Label htmlFor="disiplin">Ketentuan Disiplin</Label>
-                <Textarea 
-                  id="disiplin"
-                  value={contractData.perlindunganHukum.disiplin}
-                  onChange={(e) => handleInputChange('disiplin', e.target.value, 'perlindunganHukum')}
-                  rows={4}
-                  placeholder="Jelaskan aturan kedisiplinan, tata tertib, dan kode etik yang harus dipatuhi..."
-                  disabled={isFieldDisabled()}
-                />
+              <div className="grid md:grid-cols-2 gap-6">
+                <div>
+                  <Label htmlFor="cuti">Ketentuan Cuti</Label>
+                  <Textarea 
+                    id="cuti"
+                    value={contractData.cuti}
+                    onChange={(e) => handleInputChange('cuti', e.target.value)}
+                    rows={3}
+                    placeholder="Jelaskan jenis cuti, jumlah hari, dan ketentuan pengajuan..."
+                    disabled={isFieldDisabled()}
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="fasilitasLain">Fasilitas Lain</Label>
+                  <Textarea 
+                    id="fasilitasLain"
+                    value={contractData.fasilitasLain}
+                    onChange={(e) => handleInputChange('fasilitasLain', e.target.value)}
+                    rows={3}
+                    placeholder="Jelaskan fasilitas lain seperti laptop, training, dll..."
+                    disabled={isFieldDisabled()}
+                  />
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Step 7: Hak & Kewajiban */}
+          {currentStep === 7 && (
+            <div className="space-y-6">
+              <div className="grid md:grid-cols-2 gap-6">
+                <div>
+                  <Label htmlFor="hakPegawai">Hak Pegawai</Label>
+                  <Textarea 
+                    id="hakPegawai"
+                    value={contractData.hakPegawai}
+                    onChange={(e) => handleInputChange('hakPegawai', e.target.value)}
+                    rows={5}
+                    placeholder="Jelaskan hak-hak yang dimiliki pegawai..."
+                    disabled={isFieldDisabled()}
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="kewajibanPegawai">Kewajiban Pegawai</Label>
+                  <Textarea 
+                    id="kewajibanPegawai"
+                    value={contractData.kewajibanPegawai}
+                    onChange={(e) => handleInputChange('kewajibanPegawai', e.target.value)}
+                    rows={5}
+                    placeholder="Jelaskan kewajiban yang harus dilaksanakan pegawai..."
+                    disabled={isFieldDisabled()}
+                  />
+                </div>
               </div>
 
-              <div>
-                <Label htmlFor="sanksi">Sanksi dan Pelanggaran</Label>
-                <Textarea 
-                  id="sanksi"
-                  value={contractData.perlindunganHukum.sanksi}
-                  onChange={(e) => handleInputChange('sanksi', e.target.value, 'perlindunganHukum')}
-                  rows={4}
-                  placeholder="Jelaskan jenis sanksi untuk berbagai pelanggaran (teguran, skorsing, dll)..."
-                  disabled={isFieldDisabled()}
-                />
+              <div className="grid md:grid-cols-2 gap-6">
+                <div>
+                  <Label htmlFor="hakPerusahaan">Hak Perusahaan</Label>
+                  <Textarea 
+                    id="hakPerusahaan"
+                    value={contractData.hakPerusahaan}
+                    onChange={(e) => handleInputChange('hakPerusahaan', e.target.value)}
+                    rows={5}
+                    placeholder="Jelaskan hak-hak perusahaan..."
+                    disabled={isFieldDisabled()}
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="kewajibanPerusahaan">Kewajiban Perusahaan</Label>
+                  <Textarea 
+                    id="kewajibanPerusahaan"
+                    value={contractData.kewajibanPerusahaan}
+                    onChange={(e) => handleInputChange('kewajibanPerusahaan', e.target.value)}
+                    rows={5}
+                    placeholder="Jelaskan kewajiban perusahaan kepada pegawai..."
+                    disabled={isFieldDisabled()}
+                  />
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Step 8: Perlindungan Hukum */}
+          {currentStep === 8 && (
+            <div className="space-y-6">
+              <div className="grid md:grid-cols-2 gap-6">
+                <div>
+                  <Label htmlFor="kerahasiaan">Kerahasiaan</Label>
+                  <Textarea 
+                    id="kerahasiaan"
+                    value={contractData.kerahasiaan}
+                    onChange={(e) => handleInputChange('kerahasiaan', e.target.value)}
+                    rows={4}
+                    placeholder="Jelaskan ketentuan kerahasiaan data perusahaan..."
+                    disabled={isFieldDisabled()}
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="nonKompete">Non Kompete</Label>
+                  <Textarea 
+                    id="nonKompete"
+                    value={contractData.nonKompete}
+                    onChange={(e) => handleInputChange('nonKompete', e.target.value)}
+                    rows={4}
+                    placeholder="Jelaskan ketentuan non kompete jika ada..."
+                    disabled={isFieldDisabled()}
+                  />
+                </div>
               </div>
 
-              <div>
-                <Label htmlFor="pemutusanHubunganKerja">Pemutusan Hubungan Kerja</Label>
-                <Textarea 
-                  id="pemutusanHubunganKerja"
-                  value={contractData.perlindunganHukum.pemutusanHubunganKerja}
-                  onChange={(e) => handleInputChange('pemutusanHubunganKerja', e.target.value, 'perlindunganHukum')}
-                  rows={5}
-                  placeholder="Jelaskan ketentuan PHK, masa pemberitahuan, pesangon, dan prosedur pengunduran diri..."
-                  disabled={isFieldDisabled()}
-                />
+              <div className="grid md:grid-cols-2 gap-6">
+                <div>
+                  <Label htmlFor="aturanDisiplin">Aturan Disiplin</Label>
+                  <Textarea 
+                    id="aturanDisiplin"
+                    value={contractData.aturanDisiplin}
+                    onChange={(e) => handleInputChange('aturanDisiplin', e.target.value)}
+                    rows={4}
+                    placeholder="Jelaskan aturan kedisiplinan dan tata tertib..."
+                    disabled={isFieldDisabled()}
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="keselamatanKerja">Keselamatan Kerja</Label>
+                  <Textarea 
+                    id="keselamatanKerja"
+                    value={contractData.keselamatanKerja}
+                    onChange={(e) => handleInputChange('keselamatanKerja', e.target.value)}
+                    rows={4}
+                    placeholder="Jelaskan ketentuan keselamatan dan kesehatan kerja..."
+                    disabled={isFieldDisabled()}
+                  />
+                </div>
+              </div>
+
+              <div className="grid md:grid-cols-2 gap-6">
+                <div>
+                  <Label htmlFor="perlindunganData">Perlindungan Data</Label>
+                  <Textarea 
+                    id="perlindunganData"
+                    value={contractData.perlindunganData}
+                    onChange={(e) => handleInputChange('perlindunganData', e.target.value)}
+                    rows={4}
+                    placeholder="Jelaskan perlindungan data pribadi pegawai..."
+                    disabled={isFieldDisabled()}
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="sanksiPelanggaran">Sanksi Pelanggaran</Label>
+                  <Textarea 
+                    id="sanksiPelanggaran"
+                    value={contractData.sanksiPelanggaran}
+                    onChange={(e) => handleInputChange('sanksiPelanggaran', e.target.value)}
+                    rows={4}
+                    placeholder="Jelaskan sanksi untuk berbagai pelanggaran..."
+                    disabled={isFieldDisabled()}
+                  />
+                </div>
+              </div>
+
+              <div className="grid md:grid-cols-3 gap-6">
+                <div>
+                  <Label htmlFor="prosedurPenyelesaianSengketa">Penyelesaian Sengketa</Label>
+                  <Textarea 
+                    id="prosedurPenyelesaianSengketa"
+                    value={contractData.prosedurPenyelesaianSengketa}
+                    onChange={(e) => handleInputChange('prosedurPenyelesaianSengketa', e.target.value)}
+                    rows={3}
+                    placeholder="Jelaskan prosedur penyelesaian sengketa..."
+                    disabled={isFieldDisabled()}
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="masaNotice">Masa Notice</Label>
+                  <Textarea 
+                    id="masaNotice"
+                    value={contractData.masaNotice}
+                    onChange={(e) => handleInputChange('masaNotice', e.target.value)}
+                    rows={3}
+                    placeholder="Jelaskan masa pemberitahuan pengunduran diri..."
+                    disabled={isFieldDisabled()}
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="pesangonPHK">Pesangon PHK</Label>
+                  <Textarea 
+                    id="pesangonPHK"
+                    value={contractData.pesangonPHK}
+                    onChange={(e) => handleInputChange('pesangonPHK', e.target.value)}
+                    rows={3}
+                    placeholder="Jelaskan ketentuan pesangon PHK..."
+                    disabled={isFieldDisabled()}
+                  />
+                </div>
               </div>
             </div>
           )}
