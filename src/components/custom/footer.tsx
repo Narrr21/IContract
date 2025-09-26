@@ -8,7 +8,7 @@ export function Footer() {
         <div className="flex items-center gap-2 mb-4">
           {/* Logo IContract */}
           <Image 
-            src="/images/icontract-logo.png"
+            src="/Frame.svg"
             alt="IContract Logo"
             width={150}
             height={40}
