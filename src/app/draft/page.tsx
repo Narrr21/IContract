@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useState, useRef } from 'react'
+import React, { useState, useRef, useEffect } from 'react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -70,16 +70,24 @@ interface ContractData {
 }
 
 interface DraftPageProps {
-  initialInputMethod?: 'manual' | 'upload'
+   initialInputMethod?: 'manual' | 'upload'
    initialFile?: File | null
+   initialExtractedData?: ContractData | null
 }
 
-export default function DraftPage({ initialInputMethod, initialFile }: DraftPageProps) {
+export default function DraftPage({ initialInputMethod, initialFile, initialExtractedData }: DraftPageProps) {
   const [currentStep, setCurrentStep] = useState(initialInputMethod ? 1 : 0)
   const [inputMethod, setInputMethod] = useState<'manual' | 'upload' | null>(initialInputMethod || null)
   const [uploadedFile, setUploadedFile] = useState<File | null>(initialFile || null)
   const [isScanning, setIsScanning] = useState(false)
   const [scanProgress, setScanProgress] = useState(0)
+
+  // Set initial extracted data if available
+  useEffect(() => {
+    if (initialExtractedData) {
+      setContractData(initialExtractedData)
+    }
+  }, [initialExtractedData])
   const fileInputRef = useRef<HTMLInputElement>(null)
   const [contractData, setContractData] = useState<ContractData>({
     nomorKontrak: '',
@@ -216,27 +224,246 @@ export default function DraftPage({ initialInputMethod, initialFile }: DraftPage
   }
 
   const extractPDFData = async (file: File): Promise<ContractData> => {
-    const formData = new FormData()
-    formData.append('file', file)
+    try {
+      // Step 1: Extract raw text from PDF
+      const formData = new FormData();
+      formData.append('fileName', file.name);
+      
+      // First, get the raw text from PDF
+      const extractResponse = await fetch('/api/extract-text', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ fileName: file.name })
+      });
 
-    const response = await fetch('/api/process-pdf', {
-      method: 'POST',
-      body: formData,
-    })
+      if (!extractResponse.ok) {
+        throw new Error('Failed to extract text from PDF');
+      }
 
-    if (!response.ok) {
-      throw new Error('Failed to process PDF')
+      const extractData = await extractResponse.json();
+      
+      // Convert coordinate data to plain text
+      const extractedText = extractData.textData
+        ?.map((item: any) => {
+          if (typeof item === 'string') return item;
+          if (item.text) return item.text;
+          if (item.str) return item.str;
+          return '';
+        })
+        .filter((text: string) => text.trim())
+        .join(' ') || '';
+
+      if (!extractedText || extractedText.length < 100) {
+        throw new Error('Insufficient text content found in PDF');
+      }
+
+      console.log(`📄 Extracted ${extractedText.length} characters from PDF`);
+
+      // Step 2: Use AI to extract structured data
+      const aiResponse = await fetch('/api/draft', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          contractType: 'partnership',
+          requirements: extractedText,
+          assistanceType: 'extract',
+          additionalData: {
+            extractionType: 'form_data',
+            targetFields: [
+              'nomorKontrak', 'judul', 'jenis', 'tanggalMulai', 'durasi',
+              'pihak1', 'pihak2', 'jenisLayanan', 'deskripsiLayanan',
+              'wilayahOperasional', 'nominal', 'syaratPembayaran'
+            ]
+          }
+        })
+      });
+
+      if (!aiResponse.ok) {
+        throw new Error(`AI analysis failed: ${aiResponse.status}`);
+      }
+
+      const aiData = await aiResponse.json();
+      
+      if (!aiData.success) {
+        throw new Error(aiData.error || 'AI analysis failed');
+      }
+
+      console.log('🤖 AI analysis completed successfully');
+
+      // Step 3: Parse AI response to form data
+      const contractData = parseAIResponseToContractData(aiData.assistance);
+      
+      return contractData;
+
+    } catch (error) {
+      console.error('❌ Error extracting PDF data:', error);
+      throw error;
     }
+  };
 
-    const result = await response.json()
-    
-    // Convert the API response to ContractData format
-    const data = result.data
-    return {
-      ...data,
-      tanggalMulai: data.tanggalMulai ? new Date(data.tanggalMulai) : undefined
+  // New function to parse AI response into ContractData format
+  const parseAIResponseToContractData = (aiResponse: string): ContractData => {
+    try {
+      console.log('📊 Parsing AI response to contract data...');
+      
+      // Initialize with empty data
+      const contractData: ContractData = {
+        nomorKontrak: '',
+        judul: '',
+        jenis: 'PARTNERSHIP',
+        tanggalMulai: undefined,
+        durasi: '',
+        pihak1: {
+          namaPerusahaan: '', namaDirektur: '', alamat: '', nomorTelp: '', email: '', npwp: '', nomorUsaha: ''
+        },
+        pihak2: {
+          namaPerusahaan: '', namaDirektur: '', alamat: '', nomorTelp: '', email: '', npwp: '', nomorUsaha: ''
+        },
+        jenisLayanan: '', deskripsiLayanan: '', wilayahOperasional: '', hakKewajibanPihak1: '', hakKewajibanPihak2: '', syaratLayanan: '',
+        nominal: '', syaratPembayaran: '', caraPembayaran: { bank: '', nama: '', norek: '' }, jangkaWaktuPembayaran: '', dendaKeterlambatan: '',
+        batasWaktuKlaim: '', maksimalKompensasi: '', penyelesaianSengketa: '', forceMajeure: ''
+      };
+
+      // Parse different sections of the AI response
+      const sections = aiResponse.split(/(?=##|\*\*)/);
+      
+      sections.forEach(section => {
+        const lowerSection = section.toLowerCase();
+        
+        // Extract contract number
+        const contractNumMatch = section.match(/(?:contract number|nomor kontrak|no\.\s*kontrak)[\s:]*([^\n\r]+)/i);
+        if (contractNumMatch && !contractData.nomorKontrak) {
+          contractData.nomorKontrak = contractNumMatch[1].trim();
+        }
+
+        // Extract contract title
+        const titleMatch = section.match(/(?:title|judul|contract title)[\s:]*([^\n\r]+)/i);
+        if (titleMatch && !contractData.judul) {
+          contractData.judul = titleMatch[1].trim();
+        }
+
+        // Extract dates
+        const dateMatch = section.match(/(\d{1,2}[\/\-]\d{1,2}[\/\-]\d{4}|\d{4}[\/\-]\d{1,2}[\/\-]\d{1,2})/);
+        if (dateMatch && !contractData.tanggalMulai) {
+          try {
+            const dateStr = dateMatch[1];
+            const date = new Date(dateStr.replace(/[\/\-]/g, '-'));
+            if (!isNaN(date.getTime())) {
+              contractData.tanggalMulai = date;
+            }
+          } catch (e) {
+            console.warn('Failed to parse date:', dateMatch[1]);
+          }
+        }
+
+        // Extract company names
+        const companyMatches = section.match(/(?:company|perusahaan|pt\.?\s*|cv\.?\s*)([^\n\r,;]+)/gi);
+        if (companyMatches) {
+          companyMatches.forEach((match, index) => {
+            const cleanCompany = match.replace(/^(?:company|perusahaan|pt\.?\s*|cv\.?\s*)/i, '').trim();
+            if (cleanCompany && cleanCompany.length > 2) {
+              if (index === 0 && !contractData.pihak1.namaPerusahaan) {
+                contractData.pihak1.namaPerusahaan = cleanCompany;
+              } else if (index === 1 && !contractData.pihak2.namaPerusahaan) {
+                contractData.pihak2.namaPerusahaan = cleanCompany;
+              }
+            }
+          });
+        }
+
+        // Extract monetary values
+        const moneyMatch = section.match(/(?:rp\.?\s*|idr\s*|rupiah\s*)?([\d.,]+)(?:\s*(?:juta|million|miliar|billion))?/i);
+        if (moneyMatch && !contractData.nominal) {
+          contractData.nominal = moneyMatch[0].trim();
+        }
+
+        // Extract service descriptions
+        if (lowerSection.includes('service') || lowerSection.includes('layanan') || lowerSection.includes('scope')) {
+          const serviceMatch = section.match(/(?:service|layanan|scope)[\s:]*([^\n\r]{20,200})/i);
+          if (serviceMatch && !contractData.jenisLayanan) {
+            contractData.jenisLayanan = serviceMatch[1].trim();
+          }
+        }
+
+        // Extract addresses
+        const addressMatch = section.match(/(?:address|alamat)[\s:]*([^\n\r]{10,100})/i);
+        if (addressMatch) {
+          const address = addressMatch[1].trim();
+          if (!contractData.pihak1.alamat) {
+            contractData.pihak1.alamat = address;
+          } else if (!contractData.pihak2.alamat) {
+            contractData.pihak2.alamat = address;
+          }
+        }
+
+        // Extract phone numbers
+        const phoneMatch = section.match(/(?:\+62|62|0)[\d\-\s]{8,15}/);
+        if (phoneMatch) {
+          const phone = phoneMatch[0].trim();
+          if (!contractData.pihak1.nomorTelp) {
+            contractData.pihak1.nomorTelp = phone;
+          } else if (!contractData.pihak2.nomorTelp) {
+            contractData.pihak2.nomorTelp = phone;
+          }
+        }
+
+        // Extract emails
+        const emailMatch = section.match(/[\w.-]+@[\w.-]+\.[a-zA-Z]{2,}/);
+        if (emailMatch) {
+          const email = emailMatch[0].trim();
+          if (!contractData.pihak1.email) {
+            contractData.pihak1.email = email;
+          } else if (!contractData.pihak2.email) {
+            contractData.pihak2.email = email;
+          }
+        }
+      });
+
+      // Set defaults if certain fields are empty
+      if (!contractData.jenis) {
+        contractData.jenis = 'PARTNERSHIP';
+      }
+      
+      if (!contractData.durasi) {
+        contractData.durasi = '12 bulan'; // Default duration
+      }
+
+      console.log('✅ Successfully parsed contract data from AI response');
+      console.log('📋 Extracted data:', {
+        nomorKontrak: contractData.nomorKontrak,
+        judul: contractData.judul,
+        hasCompany1: !!contractData.pihak1.namaPerusahaan,
+        hasCompany2: !!contractData.pihak2.namaPerusahaan,
+        hasDate: !!contractData.tanggalMulai,
+        hasNominal: !!contractData.nominal
+      });
+
+      return contractData;
+
+    } catch (error) {
+      console.error('❌ Error parsing AI response:', error);
+      
+      // Return minimal data structure if parsing fails
+      return {
+        nomorKontrak: 'PKS-' + Date.now(),
+        judul: 'Kontrak Partnership',
+        jenis: 'PARTNERSHIP',
+        tanggalMulai: new Date(),
+        durasi: '12 bulan',
+        pihak1: {
+          namaPerusahaan: '', namaDirektur: '', alamat: '', nomorTelp: '', email: '', npwp: '', nomorUsaha: ''
+        },
+        pihak2: {
+          namaPerusahaan: '', namaDirektur: '', alamat: '', nomorTelp: '', email: '', npwp: '', nomorUsaha: ''
+        },
+        jenisLayanan: '', deskripsiLayanan: '', wilayahOperasional: '', hakKewajibanPihak1: '', hakKewajibanPihak2: '', syaratLayanan: '',
+        nominal: '', syaratPembayaran: '', caraPembayaran: { bank: '', nama: '', norek: '' }, jangkaWaktuPembayaran: '', dendaKeterlambatan: '',
+        batasWaktuKlaim: '', maksimalKompensasi: '', penyelesaianSengketa: '', forceMajeure: ''
+      };
     }
-  }
+  };
 
   const nextStep = () => {
     if (currentStep < steps.length - 1) {

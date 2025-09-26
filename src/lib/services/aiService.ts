@@ -392,7 +392,138 @@ Please provide a comprehensive summary of all important contract elements in a s
       maxTokens: 3000
     });
   }
+  /**
+   * Extract structured contract data from raw text
+   */
+  async extractContractData(contractContent: string, contractType: string): Promise<AIResponse> {
+    // Different system prompts based on contract type
+    let systemPrompt: string;
+    
+    if (contractType === 'employment') {
+      systemPrompt = `You are an employment contract data extraction specialist. Extract structured information from employment/job contract documents.
+
+  Extract and organize the following information from the provided employment contract:
+
+  ## Contract Basics
+  - Contract Number
+  - Contract Title
+  - Title
+  - Employment Type (Employment, Freelance, Internship)
+  - Start Date and Duration/End Date
+  - Probation Period (if any)
+
+  ## Company Information
+  - Company Name
+  - Director Name
+  - Company Address (complete)
+  - Company Phone Number
+  - Company Email
+  - Company NPWP
+
+  ## Employee Information
+  - Employee Full Name
+  - Employee Position
+  - Employee Address (complete)
+  - Gender
+  - Date of Birth/Age
+  - Contract Type (PKWTT, PKWT)
+  - Employee ID Number (KTP/Passport)
+  - Employee Phone Number
+  - Employee Email
+
+  ## Job Details
+  - Job Description and Responsibilities
+  - Work Location/Office
+  - Work Schedule (days, hours)
+  - Break Time/Lunch Hours
+  - Leave/Vacation Policy
+
+  ## Compensation & Benefits
+  - Basic Salary (monthly/yearly)
+  - Fixed Allowances (transport, meal, etc.)
+  - Variable Allowances (performance bonus, incentives)
+  - Social Security (BPJS Kesehatan, BPJS Ketenagakerjaan)
+  - Health Insurance
+  - Other Benefits (laptop, phone, car, training, etc.)
+  - Payment Schedule and Method
+
+  ## Legal & Compliance
+  - Confidentiality Clauses
+  - Non-compete Agreements
+  - Disciplinary Rules
+  - Termination Conditions
+  - Notice Period
+  - Severance Pay
+  - Dispute Resolution
+
+  Format your response clearly with headers and bullet points. If information is not available, state "Not specified in document".
+
+  Focus on employment-specific terms and Indonesian labor law requirements.`;
+
+    } else {
+      // Original partnership/general contract prompt
+      systemPrompt = `You are a contract data extraction specialist. Extract structured information from contract documents.
+
+  Extract and organize the following information from the provided contract text:
+
+  ## Contract Basics
+  - Contract Number
+  - Contract Title
+  - Contract Type (Partnership, Service, Supply, etc.)
+  - Start Date and Duration
+  - Contract Value/Amount
+
+  ## Party Information
+  For each party, extract:
+  - Company Name
+  - Director/Representative Name  
+  - Complete Address
+  - Phone Number
+  - Email Address
+  - NPWP (Tax ID)
+  - Business License Number
+
+  ## Service/Scope Details
+  - Type of Service/Business
+  - Detailed Service Description
+  - Operating Territory/Region
+  - Rights and Obligations of each party
+  - Service Terms and Conditions
+
+  ## Financial Terms
+  - Contract Value/Amount
+  - Payment Terms and Conditions
+  - Payment Method (Bank, Account Details)
+  - Payment Schedule
+  - Late Payment Penalties
+
+  ## Legal Terms
+  - Claim Deadlines
+  - Maximum Compensation
+  - Dispute Resolution Mechanism
+  - Force Majeure Clauses
+
+  Format your response clearly with headers and bullet points. If information is not available, state "Not specified in document".
+
+  Be thorough but concise. Focus on extracting exact values and text from the document.`;
+    }
+
+    const userMessage = `Please extract structured contract information from this ${contractType} document:
+
+  ${contractContent}
+
+  Provide a comprehensive extraction of all contract details in a clear, organized format suitable for ${contractType} contracts.`;
+
+    return this.makeRequest([
+      { role: 'user', content: userMessage }
+    ], {
+      systemPrompt,
+      temperature: 0.1, // Very low temperature for consistent extraction
+      maxTokens: 3000
+    });
+  }
 }
+
 
 // Export singleton instance
 export const aiService = new AIService();

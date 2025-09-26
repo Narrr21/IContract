@@ -159,7 +159,8 @@ export default function EmploymentPage({ initialInputMethod, initialFile }: Empl
   }
 
   const isFieldDisabled = () => {
-    return inputMethod === 'upload' && uploadedFile !== null
+    // return inputMethod === 'upload' && uploadedFile !== null
+    return false // Always allow
   }
 
   const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {

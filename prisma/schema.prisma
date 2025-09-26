@@ -46,6 +46,7 @@ model Contract {
   jatuhtempo        DateTime
 
   partnershipDetails Partnership?
+  employmentDetails  Employment?
 
   @@map("contracts")
 }
@@ -93,4 +94,61 @@ model Partnership {
   contract        Contract @relation(fields: [kontrakid], references: [id], onDelete: Cascade)
 
   @@map("partnership_contracts")
+}
+
+model Employment {
+  id                    Int @id @default(autoincrement())
+  kontrakid             Int @unique
+  
+  // Contract Information
+  nomorkontrak          String
+  judulkontrak          String
+  tanggalmulai          DateTime
+  tanggalakhir          DateTime
+  
+  // Company Information  
+  namaperusahaan        String
+  namadirektwr          String
+  alamatperusahaan      String
+  notelpperusahaan      String
+  emailperusahaan       String
+  npwpperusahaan        String
+  
+  // Employee Information
+  namalengkappegawai    String
+  jabatan               String
+  alamatpegawai         String
+  jeniskelamin          String
+  usia                  Int
+  jenispegawai          String
+  noktp                 String
+  notelppegawai         String
+  emailpegawai          String
+  
+  // Job Details
+  jobdesc               String
+  tempatkerja           String
+  waktukerja            String
+  waktuistirahat        String
+  ketentuancuti         String
+  ketentulembur         String
+  
+  // Compensation
+  gajipokok             BigInt
+  tunjangantetap        BigInt
+  tunjangantidaktetap   BigInt
+  jaminansosial         String
+  fasilitaslain         String
+  
+  // Legal & Disciplinary
+  perlindunganhukum     String
+  kerahasiaan           String
+  ketentuandisiplin     String
+  sanksi                String
+  pelanggaran           String
+  pemutusanhubungan     String
+
+  contract              Contract @relation(fields: [kontrakid], references: [id], onDelete: Cascade)
+
+  @@map("employment_contracts")
 }

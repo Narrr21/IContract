@@ -341,7 +341,7 @@ const parseAIAnalysisToFindings = (analysis: string) => {
           
           newFindings[groupName].push({
             id: `ai-finding-${findingCounter++}`,
-            page: 1,
+            page: -1,
             text: firstLine.substring(0, 80) || `${header} - Point ${pointIndex + 1}`,
             comment: restOfPoint || firstLine,
             category
@@ -354,7 +354,7 @@ const parseAIAnalysisToFindings = (analysis: string) => {
         
         newFindings[groupName].push({
           id: `ai-finding-${findingCounter++}`,
-          page: 1,
+          page: -1,
           text: firstLine.substring(0, 80) || header,
           comment: restOfContent || content,
           category
@@ -394,7 +394,7 @@ const parseAIAnalysisToFindings = (analysis: string) => {
         
         newFindings[groupName].push({
           id: `ai-finding-${findingCounter++}`,
-          page: 1,
+          page: -1,
           text: firstSentence.substring(0, 80),
           comment: paragraph,
           category
