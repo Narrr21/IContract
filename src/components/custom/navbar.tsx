@@ -71,7 +71,7 @@ export function Navbar() {
   // Array untuk link navigasi agar lebih rapi
   const navLinks = [
     { href: "/dashboard", label: "Beranda" },
-    { href: "/buat-kontrak", label: "Buat Kontrak" },
+    { href: "/create", label: "Buat Kontrak" },
     { href: "/review", label: "Review" },
   ];
 
