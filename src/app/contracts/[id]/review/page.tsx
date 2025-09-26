@@ -2,6 +2,8 @@
 
 import { useState, useEffect } from "react";
 import { useParams } from "next/navigation";
+import { useApi } from "@/lib/apiClient";
+import { useContractToasts } from "@/components/ui/contract-toasts";
 import dynamic from "next/dynamic";
 import {
   ResizableHandle,
@@ -113,6 +115,8 @@ function ContractReviewerPageContent() {
   const [analysisError, setAnalysisError] = useState<string | null>(null);
   const [showAIPanel, setShowAIPanel] = useState(false);
   const [isExtractingFromPDF, setIsExtractingFromPDF] = useState(false);
+  const api = useApi();
+  const toasts = useContractToasts();
 
   // NEW: Dynamic findings from AI or static data
   const [groupedFindings, setGroupedFindings] = useState<{
@@ -154,17 +158,12 @@ function ContractReviewerPageContent() {
   const extractTextFromPDF = async () => {
     setIsExtractingFromPDF(true);
     try {
-      const response = await fetch("/api/extract-text", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ fileName: pdfFile }),
-      });
-
-      if (!response.ok) {
-        throw new Error(`Failed to extract text: ${response.status}`);
-      }
-
-      const data = await response.json();
+      const { ok, data, error } = await api.post<any>(
+        "/api/extract-text",
+        { fileName: pdfFile },
+        { silent: false, processingMessage: "Mengambil teks PDF..." }
+      );
+      if (!ok) throw new Error(error || "Gagal extract");
 
       // Convert coordinate data to plain text
       const extractedText =
@@ -202,17 +201,12 @@ function ContractReviewerPageContent() {
     const fetchTextData = async () => {
       setIsLoadingText(true);
       try {
-        const response = await fetch("/api/extract-text", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ fileName: pdfFile }),
-        });
-
-        if (!response.ok) {
-          throw new Error(`API call failed with status: ${response.status}`);
-        }
-
-        const data = await response.json();
+        const { ok, data, error } = await api.post<any>(
+          "/api/extract-text",
+          { fileName: pdfFile },
+          { silent: false }
+        );
+        if (!ok) throw new Error(error || "Gagal load PDF");
         const textData = data.textData || [];
         setTextWithCoords(textData);
 
@@ -269,29 +263,21 @@ function ContractReviewerPageContent() {
     try {
       console.log("🤖 Starting AI analysis...");
 
-      const response = await fetch("/api/review", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
+      const { ok, data, error } = await api.post<any>(
+        "/api/review",
+        {
           contractContent: contractContent.trim(),
           contractType,
           analysisType,
-        }),
-      });
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.error || `Analysis failed: ${response.status}`);
-      }
-
-      if (!data.success) {
-        throw new Error(data.error || "Analysis failed");
-      }
-
-      setAiAnalysis(data);
+        },
+        {
+          processingMessage: "Menganalisa...",
+          successMessage: "Analisa selesai",
+        }
+      );
+      if (!ok) throw new Error(error || "Gagal analisa");
+      if (!data?.success) throw new Error(data?.error || "Analisa gagal");
+      setAiAnalysis(data as any);
       console.log("✅ AI analysis completed successfully");
 
       // NEW: Parse AI analysis and create findings

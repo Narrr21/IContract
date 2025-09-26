@@ -3,6 +3,7 @@ import { Poppins, Noto_Sans } from "next/font/google";
 // import { Navbar } from "@/components/custom/navbar";
 // import { Footer } from "@/components/custom/footer";
 import "./globals.css";
+import { ToastProvider } from "../components/ui/toast";
 
 const poppins = Poppins({
   variable: "--font-poppins",
@@ -28,12 +29,12 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" suppressHydrationWarning>
-      <body
-        className={`${poppins.variable} ${notoSans.variable} font-sans antialiased`}
-      >
-        {/* <Navbar /> */}
-        {children}
-        {/* Footer will be handled by individual layout groups (public)/(main) */}
+      <body className={`${poppins.variable} ${notoSans.variable} font-sans antialiased`}>
+        <ToastProvider>
+          {/* <Navbar /> */}
+          {children}
+          {/* Footer will be handled by individual layout groups (public)/(main) */}
+        </ToastProvider>
       </body>
     </html>
   );

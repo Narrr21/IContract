@@ -1,7 +1,9 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
+import { useApi } from "@/lib/apiClient";
+import { useContractToasts } from "@/components/ui/contract-toasts";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -21,9 +23,15 @@ import {
   ArrowUpDown,
   Loader2,
   Edit,
-  Check
+  Check,
 } from "lucide-react";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 // TypeScript interfaces
 interface Contract {
@@ -56,6 +64,8 @@ interface Pagination {
 
 export default function DashboardPage() {
   const router = useRouter();
+  const api = useApi();
+  const ctoast = useContractToasts();
 
   // Data states
   const [contracts, setContracts] = useState<Contract[]>([]);
@@ -64,7 +74,7 @@ export default function DashboardPage() {
   const [filterOptions, setFilterOptions] = useState<FilterOptions>({
     statusOptions: [],
     typeOptions: [],
-    sortOptions: []
+    sortOptions: [],
   });
   const [pagination, setPagination] = useState<Pagination>({
     page: 1,
@@ -72,7 +82,7 @@ export default function DashboardPage() {
     totalCount: 0,
     totalPages: 0,
     hasNextPage: false,
-    hasPreviousPage: false
+    hasPreviousPage: false,
   });
 
   // Filter states
@@ -91,55 +101,58 @@ export default function DashboardPage() {
   }, [searchQuery]);
 
   // Fetch contracts
+  const lastParamsRef = useRef<string | null>(null);
   const fetchContracts = useCallback(async () => {
     setLoading(true);
     setError(null);
-
     const params = new URLSearchParams({
       search: debouncedSearch,
-      status: selectedStatuses.join(','),
-      type: selectedTypes.join(','),
+      status: selectedStatuses.join(","),
+      type: selectedTypes.join(","),
       sortBy,
       sortOrder,
       page: currentPage.toString(),
-      limit: pagination.limit.toString()
+      limit: pagination.limit.toString(),
     });
-
-    try {
-      const response = await fetch(`/api/list?${params}`);
-      
-      if (!response.ok) {
-        throw new Error('Failed to fetch contracts');
-      }
-
-      const data = await response.json();
-      
-      if (data.success) {
-        setContracts(data.contracts);
-        setPagination(data.pagination);
-      } else {
-        throw new Error(data.error || 'Failed to fetch contracts');
-      }
-    } catch (err) {
-      console.error('Fetch contracts error:', err);
-      setError(err instanceof Error ? err.message : 'Failed to fetch contracts');
-    } finally {
+    const paramsString = params.toString();
+    if (lastParamsRef.current === paramsString) {
+      // Prevent refetch if nothing changed
       setLoading(false);
+      return;
     }
-  }, [debouncedSearch, selectedStatuses, selectedTypes, sortBy, sortOrder, currentPage, pagination.limit]);
+    lastParamsRef.current = paramsString;
+    const { ok, data, error } = await api.get<any>(`/api/list?${params}`, {
+      silent: true,
+    });
+    if (!ok || !data?.success) {
+      setError(error || data?.error || "Gagal memuat kontrak");
+      ctoast.network();
+    } else {
+      setContracts(data.contracts);
+      setPagination(data.pagination);
+    }
+    setLoading(false);
+    // ctoast sudah stabil (memoized) sekarang; dependensi aman
+  }, [
+    api,
+    debouncedSearch,
+    selectedStatuses,
+    selectedTypes,
+    sortBy,
+    sortOrder,
+    currentPage,
+    pagination.limit,
+    ctoast,
+  ]);
 
   // Fetch filter options
   const fetchFilterOptions = useCallback(async () => {
-    try {
-      const response = await fetch('/api/list', { method: 'OPTIONS' });
-      if (response.ok) {
-        const data = await response.json();
-        setFilterOptions(data);
-      }
-    } catch (err) {
-      console.error('Failed to fetch filter options:', err);
-    }
-  }, []);
+    const { ok, data } = await api.request<any>("/api/list", {
+      method: "OPTIONS",
+      silent: true,
+    });
+    if (ok && data) setFilterOptions(data);
+  }, [api]);
 
   // Effects
   useEffect(() => {
@@ -164,17 +177,17 @@ export default function DashboardPage() {
 
   const handleStatusFilter = (status: string, checked: boolean) => {
     if (checked) {
-      setSelectedStatuses(prev => [...prev, status]);
+      setSelectedStatuses((prev) => [...prev, status]);
     } else {
-      setSelectedStatuses(prev => prev.filter(s => s !== status));
+      setSelectedStatuses((prev) => prev.filter((s) => s !== status));
     }
   };
 
   const handleTypeFilter = (type: string, checked: boolean) => {
     if (checked) {
-      setSelectedTypes(prev => [...prev, type]);
+      setSelectedTypes((prev) => [...prev, type]);
     } else {
-      setSelectedTypes(prev => prev.filter(t => t !== type));
+      setSelectedTypes((prev) => prev.filter((t) => t !== type));
     }
   };
 
@@ -188,31 +201,18 @@ export default function DashboardPage() {
   };
 
   const handleStatusChange = async (contractId: number, newStatus: string) => {
-    try {
-      const response = await fetch(`/api/contract?id=${contractId}`, {
-        method: 'PATCH',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ status: newStatus }),
-      });
-
-      if (response.ok) {
-        // Update local state
-        setContracts(prev => 
-          prev.map(contract => 
-            contract.id === contractId 
-              ? { ...contract, status: newStatus }
-              : contract
-          )
-        );
-      } else {
-        console.error('Failed to update status');
-        alert('Gagal mengubah status kontrak');
-      }
-    } catch (error) {
-      console.error('Error updating status:', error);
-      alert('Terjadi kesalahan saat mengubah status');
+    const { ok } = await api.request(`/api/contract?id=${contractId}`, {
+      method: "PATCH",
+      body: JSON.stringify({ status: newStatus }),
+      successMessage: "Status diperbarui",
+      processingMessage: "Mengubah status...",
+    });
+    if (ok) {
+      setContracts((prev) =>
+        prev.map((c) => (c.id === contractId ? { ...c, status: newStatus } : c))
+      );
+    } else {
+      ctoast.network();
     }
   };
 
@@ -238,7 +238,8 @@ export default function DashboardPage() {
     }
   };
 
-  const activeFiltersCount = selectedStatuses.length + selectedTypes.length + (debouncedSearch ? 1 : 0);
+  const activeFiltersCount =
+    selectedStatuses.length + selectedTypes.length + (debouncedSearch ? 1 : 0);
 
   if (error) {
     return (
@@ -256,7 +257,9 @@ export default function DashboardPage() {
       <div className="max-w-6xl mx-auto p-6">
         {/* Header */}
         <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">Daftar Kontrak</h1>
+          <h1 className="text-3xl font-bold text-gray-900 mb-2">
+            Daftar Kontrak
+          </h1>
         </div>
 
         {/* Search and Filter Bar */}
@@ -276,7 +279,10 @@ export default function DashboardPage() {
           {/* Filter Button */}
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="outline" className="bg-white border-gray-200 hover:bg-gray-50 rounded-lg h-11 px-4">
+              <Button
+                variant="outline"
+                className="bg-white border-gray-200 hover:bg-gray-50 rounded-lg h-11 px-4"
+              >
                 <Filter className="mr-2 h-4 w-4" />
                 Filter
                 {activeFiltersCount > 0 && (
@@ -291,18 +297,23 @@ export default function DashboardPage() {
               <div className="space-y-4">
                 {/* Status Filter */}
                 <div>
-                  <Label className="text-sm font-medium mb-2 block">Status</Label>
+                  <Label className="text-sm font-medium mb-2 block">
+                    Status
+                  </Label>
                   <div className="space-y-2">
                     {filterOptions.statusOptions.map((status) => (
                       <div key={status} className="flex items-center space-x-2">
                         <Checkbox
                           id={`status-${status}`}
                           checked={selectedStatuses.includes(status)}
-                          onCheckedChange={(checked) => 
+                          onCheckedChange={(checked) =>
                             handleStatusFilter(status, checked as boolean)
                           }
                         />
-                        <Label htmlFor={`status-${status}`} className="capitalize text-sm">
+                        <Label
+                          htmlFor={`status-${status}`}
+                          className="capitalize text-sm"
+                        >
                           {status}
                         </Label>
                       </div>
@@ -319,7 +330,7 @@ export default function DashboardPage() {
                         <Checkbox
                           id={`type-${type}`}
                           checked={selectedTypes.includes(type)}
-                          onCheckedChange={(checked) => 
+                          onCheckedChange={(checked) =>
                             handleTypeFilter(type, checked as boolean)
                           }
                         />
@@ -334,9 +345,9 @@ export default function DashboardPage() {
                 {activeFiltersCount > 0 && (
                   <>
                     <DropdownMenuSeparator />
-                    <Button 
-                      variant="ghost" 
-                      size="sm" 
+                    <Button
+                      variant="ghost"
+                      size="sm"
                       onClick={clearFilters}
                       className="w-full"
                     >
@@ -351,7 +362,10 @@ export default function DashboardPage() {
           {/* Sort Button */}
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="outline" className="bg-white border-gray-200 hover:bg-gray-50 rounded-lg h-11 px-4">
+              <Button
+                variant="outline"
+                className="bg-white border-gray-200 hover:bg-gray-50 rounded-lg h-11 px-4"
+              >
                 <ArrowUpDown className="mr-2 h-4 w-4" />
                 Urutkan
                 <ChevronDown className="ml-2 h-4 w-4" />
@@ -359,8 +373,8 @@ export default function DashboardPage() {
             </DropdownMenuTrigger>
             <DropdownMenuContent>
               {filterOptions.sortOptions.map((option) => (
-                <DropdownMenuItem 
-                  key={option.value} 
+                <DropdownMenuItem
+                  key={option.value}
                   onSelect={() => setSortBy(option.value)}
                   className={sortBy === option.value ? "bg-blue-50" : ""}
                 >
@@ -373,7 +387,9 @@ export default function DashboardPage() {
                   id="sort-desc"
                   className="mr-2"
                   checked={sortOrder === "desc"}
-                  onCheckedChange={(checked) => setSortOrder(checked ? "desc" : "asc")}
+                  onCheckedChange={(checked) =>
+                    setSortOrder(checked ? "desc" : "asc")
+                  }
                 />
                 <Label htmlFor="sort-desc">Descending</Label>
               </DropdownMenuItem>
@@ -402,9 +418,15 @@ export default function DashboardPage() {
               <div className="text-center py-12 text-gray-500">
                 <FileText className="h-12 w-12 mx-auto mb-4 text-gray-300" />
                 <p className="text-lg font-medium mb-2">No contracts found</p>
-                <p className="text-sm">Try adjusting your search or filter criteria</p>
+                <p className="text-sm">
+                  Try adjusting your search or filter criteria
+                </p>
                 {activeFiltersCount > 0 && (
-                  <Button variant="link" onClick={clearFilters} className="mt-2">
+                  <Button
+                    variant="link"
+                    onClick={clearFilters}
+                    className="mt-2"
+                  >
                     Clear all filters
                   </Button>
                 )}
@@ -415,9 +437,8 @@ export default function DashboardPage() {
                   key={contract.id}
                   className="grid grid-cols-12 gap-4 p-4 hover:bg-gray-50 transition-colors relative"
                 >
-                 
                   {/* Document Icon & Name */}
-                  <div 
+                  <div
                     className="col-span-4 flex items-center cursor-pointer"
                     onClick={() => handleRowClick(contract.id)}
                   >
@@ -431,12 +452,18 @@ export default function DashboardPage() {
 
                   {/* Status Dropdown */}
                   <div className="col-span-2 flex items-center">
-                    <Select 
-                      value={contract.status} 
-                      onValueChange={(newStatus) => handleStatusChange(contract.id, newStatus)}
+                    <Select
+                      value={contract.status}
+                      onValueChange={(newStatus) =>
+                        handleStatusChange(contract.id, newStatus)
+                      }
                     >
                       <SelectTrigger className="w-full h-8 text-sm border-0 bg-transparent hover:bg-gray-100 focus:ring-0">
-                        <div className={`px-3 py-1 text-sm rounded-full capitalize ${getStatusBadgeColor(contract.status)}`}>
+                        <div
+                          className={`px-3 py-1 text-sm rounded-full capitalize ${getStatusBadgeColor(
+                            contract.status
+                          )}`}
+                        >
                           <SelectValue />
                         </div>
                       </SelectTrigger>
@@ -450,7 +477,7 @@ export default function DashboardPage() {
                   </div>
 
                   {/* Counterparty */}
-                  <div 
+                  <div
                     className="col-span-3 flex items-center cursor-pointer"
                     onClick={() => handleRowClick(contract.id)}
                   >
@@ -460,13 +487,11 @@ export default function DashboardPage() {
                   </div>
 
                   {/* Expiry Date */}
-                  <div 
+                  <div
                     className="col-span-2 flex items-center cursor-pointer"
                     onClick={() => handleRowClick(contract.id)}
                   >
-                    <span className="text-gray-600">
-                      {contract.expiryDate}
-                    </span>
+                    <span className="text-gray-600">{contract.expiryDate}</span>
                   </div>
 
                   {/* Action Buttons */}
@@ -494,14 +519,19 @@ export default function DashboardPage() {
         {!loading && contracts.length > 0 && (
           <div className="flex items-center justify-between">
             <div className="text-sm text-gray-600">
-              Showing {((pagination.page - 1) * pagination.limit) + 1} to {Math.min(pagination.page * pagination.limit, pagination.totalCount)} of {pagination.totalCount} contracts
+              Showing {(pagination.page - 1) * pagination.limit + 1} to{" "}
+              {Math.min(
+                pagination.page * pagination.limit,
+                pagination.totalCount
+              )}{" "}
+              of {pagination.totalCount} contracts
             </div>
             <div className="flex gap-2">
               <Button
                 variant="outline"
                 size="sm"
                 disabled={!pagination.hasPreviousPage}
-                onClick={() => setCurrentPage(prev => prev - 1)}
+                onClick={() => setCurrentPage((prev) => prev - 1)}
                 className="bg-white border-gray-200 hover:bg-gray-50"
               >
                 Previous
@@ -510,7 +540,7 @@ export default function DashboardPage() {
                 variant="outline"
                 size="sm"
                 disabled={!pagination.hasNextPage}
-                onClick={() => setCurrentPage(prev => prev + 1)}
+                onClick={() => setCurrentPage((prev) => prev + 1)}
                 className="bg-white border-gray-200 hover:bg-gray-50"
               >
                 Next
