@@ -1,29 +1,45 @@
 "use client";
 
 import Link from "next/link";
-import { MountainIcon } from "lucide-react";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { useState, useEffect } from "react"; // 'useEffect' diperlukan
-import { Button } from "../ui/button"; // Path disesuaikan jika perlu
-import { useRouter } from "next/navigation";
+import { useState, useEffect } from "react";
+import { useRouter, usePathname } from "next/navigation";
+import {
+  LayersIcon,
+  ChevronDownIcon,
+  ChevronUpIcon,
+  UserIcon,
+  LogOutIcon,
+} from "lucide-react";
+import { Button } from "@/components/ui/button";
+import {
+  DropdownMenu,
+  DropdownMenuTrigger,
+  DropdownMenuContent,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuItem,
+} from "@/components/ui/dropdown-menu";
 
+// Interface User tetap sama
 interface User {
   firstName: string;
   lastName: string;
   email: string;
-  avatarUrl: string;
+  avatarUrl?: string; // Avatar bisa jadi opsional
   initials: string;
 }
 
 export function Navbar() {
+  // --- LOGIKA STATE MANAGEMENT DARI KODE ANDA (DIPERTAHANKAN) ---
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
-  const [isMounted, setIsMounted] = useState(false); // 1. Tambahkan state 'isMounted'
+  const [isMounted, setIsMounted] = useState(false);
+  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const router = useRouter();
+  const pathname = usePathname(); // Hook untuk mendapatkan path URL saat ini
 
-  // Efek ini hanya akan berjalan di sisi klien setelah komponen terpasang
   useEffect(() => {
-    setIsMounted(true); // 2. Set 'isMounted' menjadi true
+    setIsMounted(true); // Komponen sudah terpasang di client
 
     const fetchUser = async () => {
       try {
@@ -33,14 +49,6 @@ export function Navbar() {
           setUser(data.user);
         } else {
           setUser(null);
-          // placeholder
-          // setUser({
-          //   firstName: "John",
-          //   lastName: "Doe",
-          //   email: "tes",
-          //   avatarUrl: "https://i.pravatar.cc/150?img=3",
-          //   initials: "JD",
-          // });
         }
       } catch (error) {
         console.error("Failed to fetch user:", error);
@@ -51,86 +59,117 @@ export function Navbar() {
     };
 
     fetchUser();
-  }, []); // Dependensi kosong agar hanya berjalan sekali
+  }, []);
 
   const handleLogout = async () => {
-    await fetch("/api/logout");
+    // Fungsi logout dari kode Anda
+    await fetch("/api/logout", { method: "POST" });
     setUser(null);
     router.push("/login");
   };
 
-  // 3. Tampilkan placeholder jika komponen belum terpasang di klien
-  // Ini memastikan render server dan render awal klien identik
+  // Array untuk link navigasi agar lebih rapi
+  const navLinks = [
+    { href: "/", label: "Beranda" },
+    { href: "/buat-kontrak", label: "Buat Kontrak" },
+    { href: "/review", label: "Review" },
+  ];
+
+  // --- RENDER UI YANG SESUAI DESAIN (DIADOPSI DARI JAWABAN SEBELUMNYA) ---
+
+  // Placeholder yang lebih baik untuk mencegah layout shift saat !isMounted
   if (!isMounted) {
     return (
-      <header className="px-4 lg:px-6 h-14 flex items-center border-b bg-white dark:bg-gray-950 sticky top-0 z-50">
-        <Link href="/" className="flex items-center justify-center">
-          <MountainIcon className="h-6 w-6 text-orange-500" />
-          <span className="ml-2 text-lg font-bold">CMX</span>
-        </Link>
-        <nav className="ml-auto flex items-center gap-4 sm:gap-6">
-          {/* Tampilkan placeholder yang konsisten */}
-          <div className="h-6 w-24 bg-gray-200 rounded-md animate-pulse" />
-          <div className="h-6 w-24 bg-gray-200 rounded-md animate-pulse" />
-          <div className="h-9 w-9 bg-gray-200 rounded-full animate-pulse" />
-        </nav>
+      <header className="px-4 lg:px-6 h-16 flex items-center border-b bg-white dark:bg-gray-950 sticky top-0 z-50">
+        <div className="container mx-auto flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <div className="h-6 w-6 bg-gray-200 rounded animate-pulse" />
+            <div className="h-5 w-28 bg-gray-200 rounded animate-pulse" />
+          </div>
+          <div className="h-9 w-24 bg-gray-200 rounded-md animate-pulse" />
+        </div>
       </header>
     );
   }
 
+  // UI utama setelah komponen terpasang di client
+  // UI utama setelah komponen terpasang di client
   return (
-    <header className="px-4 lg:px-6 h-14 flex items-center border-b bg-white dark:bg-gray-950 sticky top-0 z-50">
-      <Link href="/" className="flex items-center justify-center">
-        <MountainIcon className="h-6 w-6 text-orange-500" />
-        <span className="ml-2 text-lg font-bold">CMX</span>
-      </Link>
+    <header className="px-4 lg:px-6 h-16 w-sc flex items-center border-b bg-[#F8F8FF] dark:bg-gray-950 sticky top-0 z-50">
+      <div className="container mx-auto w-screen flex items-center justify-between">
+        {/* BAGIAN KIRI: Menggabungkan Logo dan Navigasi */}
+        <div className="flex items-center gap-10">
+          {/* Logo */}
+          <Link href="/" className="flex items-center justify-center">
+            <img src="/Frame.svg" alt="IContract Logo" className="h-6 w-auto" />
+          </Link>
+        </div>
 
-      <nav className="ml-auto flex items-center gap-4 sm:gap-6">
-        <Link
-          href="/"
-          className="text-sm font-medium hover:underline underline-offset-4"
-        >
-          Dashboard
-        </Link>
-        <Link
-          href="/create"
-          className="text-sm font-medium hover:underline underline-offset-4"
-        >
-          Create Contract
-        </Link>
-
-        {isLoading ? (
-          <div className="h-9 w-9 bg-gray-200 rounded-full animate-pulse" />
-        ) : user ? (
-          <>
-            <Button variant="ghost" onClick={handleLogout}>
-              Logout
-            </Button>
-            <Avatar className="h-9 w-9">
-              <AvatarImage
-                src={user.avatarUrl}
-                alt={`${user.firstName} ${user.lastName}`}
-              />
-              <AvatarFallback>{user.initials}</AvatarFallback>
-            </Avatar>
-          </>
-        ) : (
-          <>
-            <Link
-              href="/register"
-              className="text-sm font-medium hover:underline underline-offset-4"
-            >
-              Register
+        {/* BAGIAN KANAN: Hanya berisi Tombol Masuk atau Profil Pengguna */}
+        <div className="ml-auto flex gap-6">
+          {/* Navigasi untuk pengguna yang sudah login */}
+          {user && (
+            <nav className="hidden md:flex items-center gap-6">
+              {navLinks.map((link) => (
+                <Link
+                  key={link.href}
+                  href={link.href}
+                  className={`text-sm font-medium transition-colors hover:text-blue-600 ${
+                    pathname === link.href
+                      ? "text-blue-600" // Gaya untuk link aktif
+                      : "text-gray-600 dark:text-gray-400"
+                  }`}
+                >
+                  {link.label}
+                </Link>
+              ))}
+            </nav>
+          )}
+          {isLoading ? (
+            <div className="h-9 w-24 bg-[#3D74EA] rounded-md animate-pulse" />
+          ) : user ? (
+            <DropdownMenu onOpenChange={setIsDropdownOpen}>
+              <DropdownMenuTrigger asChild>
+                <Button
+                  variant="outline"
+                  className="flex items-center gap-2 border-blue-600 bg-transparent hover:bg-blue-50 text-blue-600"
+                >
+                  Profil
+                  {isDropdownOpen ? (
+                    <ChevronUpIcon className="h-4 w-4" />
+                  ) : (
+                    <ChevronDownIcon className="h-4 w-4" />
+                  )}
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent
+                align="end"
+                className="min-w-0 w-fit bg-transparent border-gray-200"
+                style={{ width: "var(--radix-dropdown-menu-trigger-width)" }}
+              >
+                <DropdownMenuItem
+                  onClick={() => router.push("/profile")}
+                  className="text-black bg-[#F8F8FF] hover:bg-gray-100 cursor-pointer focus:bg-gray-100 flex items-center gap-2"
+                >
+                  <UserIcon className="h-4 w-4" />
+                  Profil
+                </DropdownMenuItem>
+                <DropdownMenuItem
+                  onClick={handleLogout}
+                  className="text-red-500 bg-[#F8F8FF] hover:bg-gray-100 cursor-pointer focus:bg-gray-100 focus:text-red-500 flex items-center gap-2"
+                >
+                  <LogOutIcon className="h-4 w-4 text-red-500" />
+                  Logout
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          ) : (
+            <Link href="/login">
+              <Button className="bg-[#3D74EA]">Masuk</Button>
             </Link>
-            <Link
-              href="/login"
-              className="text-sm font-medium hover:underline underline-offset-4"
-            >
-              Login
-            </Link>
-          </>
-        )}
-      </nav>
+          )}
+        </div>
+      </div>
     </header>
   );
 }
