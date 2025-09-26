@@ -1,235 +1,282 @@
-'use client'
+"use client";
 
-import React, { useState, useRef, useEffect } from 'react'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
-import { Textarea } from '@/components/ui/textarea'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import { Calendar } from '@/components/ui/calendar'
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
-import { CalendarIcon, Upload, FileText, Users, CheckCircle } from 'lucide-react'
-import { format } from 'date-fns'
-import { createContractWithDetails } from '@/lib/helper'
+import React, { useState, useRef, useEffect } from "react";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Calendar } from "@/components/ui/calendar";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+import {
+  CalendarIcon,
+  Upload,
+  FileText,
+  Users,
+  CheckCircle,
+} from "lucide-react";
+import { format } from "date-fns";
+import { createContractWithDetails } from "@/lib/helper";
 import PreviewContract from '@/components/PreviewContract'
 
 interface ContractData {
   // Informasi Umum
-  nomorKontrak: string
-  judul: string
-  jenis: string
-  tanggalMulai: Date | undefined
-  durasi: string
-  
+  nomorKontrak: string;
+  judul: string;
+  jenis: string;
+  tanggalMulai: Date | undefined;
+  durasi: string;
+
   // Pihak Pertama
   pihak1: {
-    namaPerusahaan: string
-    namaDirektur: string
-    alamat: string
-    nomorTelp: string
-    email: string
-    npwp: string
-    nomorUsaha: string
-  }
-  
+    namaPerusahaan: string;
+    namaDirektur: string;
+    alamat: string;
+    nomorTelp: string;
+    email: string;
+    npwp: string;
+    nomorUsaha: string;
+  };
+
   // Pihak Kedua
   pihak2: {
-    namaPerusahaan: string
-    namaDirektur: string
-    alamat: string
-    nomorTelp: string
-    email: string
-    npwp: string
-    nomorUsaha: string
-  }
-  
+    namaPerusahaan: string;
+    namaDirektur: string;
+    alamat: string;
+    nomorTelp: string;
+    email: string;
+    npwp: string;
+    nomorUsaha: string;
+  };
+
   // Ruang Lingkup
-  jenisLayanan: string
-  deskripsiLayanan: string
-  wilayahOperasional: string
-  hakKewajibanPihak1: string
-  hakKewajibanPihak2: string
-  syaratLayanan: string
-  
+  jenisLayanan: string;
+  deskripsiLayanan: string;
+  wilayahOperasional: string;
+  hakKewajibanPihak1: string;
+  hakKewajibanPihak2: string;
+  syaratLayanan: string;
+
   // Administrasi Keuangan
-  nominal: string
-  syaratPembayaran: string
+  nominal: string;
+  syaratPembayaran: string;
   caraPembayaran: {
-    bank: string
-    nama: string
-    norek: string
-  }
-  jangkaWaktuPembayaran: string
-  dendaKeterlambatan: string
-  
+    bank: string;
+    nama: string;
+    norek: string;
+  };
+  jangkaWaktuPembayaran: string;
+  dendaKeterlambatan: string;
+
   // Klaim dan Sengketa
-  batasWaktuKlaim: string
-  maksimalKompensasi: string
-  penyelesaianSengketa: string
-  forceMajeure: string
+  batasWaktuKlaim: string;
+  maksimalKompensasi: string;
+  penyelesaianSengketa: string;
+  forceMajeure: string;
 }
 
 interface DraftPageProps {
-   initialInputMethod?: 'manual' | 'upload'
-   initialFile?: File | null
-   initialExtractedData?: ContractData | null
+  initialInputMethod?: "manual" | "upload";
+  initialFile?: File | null;
+  initialExtractedData?: ContractData | null;
+  // Callback ke parent untuk reset (kembali ke halaman create utama)
+  onReset?: () => void;
 }
 
-export default function DraftPage({ initialInputMethod, initialFile, initialExtractedData }: DraftPageProps) {
-  const [currentStep, setCurrentStep] = useState(initialInputMethod ? 1 : 0)
-  const [inputMethod, setInputMethod] = useState<'manual' | 'upload' | null>(initialInputMethod || null)
-  const [uploadedFile, setUploadedFile] = useState<File | null>(initialFile || null)
-  const [isScanning, setIsScanning] = useState(false)
-  const [scanProgress, setScanProgress] = useState(0)
-  const [isGenerating, setIsGenerating] = useState(false)
+export default function DraftPage({
+  initialInputMethod,
+  initialFile,
+  initialExtractedData,
+  onReset,
+}: DraftPageProps) {
+  const [currentStep, setCurrentStep] = useState(initialInputMethod ? 1 : 0);
+  const [inputMethod, setInputMethod] = useState<"manual" | "upload" | null>(
+    initialInputMethod || null
+  );
+  const [uploadedFile, setUploadedFile] = useState<File | null>(
+    initialFile || null
+  );
+  const [isScanning, setIsScanning] = useState(false);
+  const [scanProgress, setScanProgress] = useState(0);
+  const [isGenerating, setIsGenerating] = useState(false);
 
   // Set initial extracted data if available
   useEffect(() => {
     if (initialExtractedData) {
-      setContractData(initialExtractedData)
+      setContractData(initialExtractedData);
     }
-  }, [initialExtractedData])
-  const fileInputRef = useRef<HTMLInputElement>(null)
+  }, [initialExtractedData]);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const [contractData, setContractData] = useState<ContractData>({
-    nomorKontrak: '',
-    judul: '',
-    jenis: 'PARTNERSHIP',
+    nomorKontrak: "",
+    judul: "",
+    jenis: "PARTNERSHIP",
     tanggalMulai: undefined,
-    durasi: '',
+    durasi: "",
     pihak1: {
-      namaPerusahaan: '',
-      namaDirektur: '',
-      alamat: '',
-      nomorTelp: '',
-      email: '',
-      npwp: '',
-      nomorUsaha: ''
+      namaPerusahaan: "",
+      namaDirektur: "",
+      alamat: "",
+      nomorTelp: "",
+      email: "",
+      npwp: "",
+      nomorUsaha: "",
     },
     pihak2: {
-      namaPerusahaan: '',
-      namaDirektur: '',
-      alamat: '',
-      nomorTelp: '',
-      email: '',
-      npwp: '',
-      nomorUsaha: ''
+      namaPerusahaan: "",
+      namaDirektur: "",
+      alamat: "",
+      nomorTelp: "",
+      email: "",
+      npwp: "",
+      nomorUsaha: "",
     },
-    jenisLayanan: '',
-    deskripsiLayanan: '',
-    wilayahOperasional: '',
-    hakKewajibanPihak1: '',
-    hakKewajibanPihak2: '',
-    syaratLayanan: '',
-    nominal: '',
-    syaratPembayaran: '',
+    jenisLayanan: "",
+    deskripsiLayanan: "",
+    wilayahOperasional: "",
+    hakKewajibanPihak1: "",
+    hakKewajibanPihak2: "",
+    syaratLayanan: "",
+    nominal: "",
+    syaratPembayaran: "",
     caraPembayaran: {
-      bank: '',
-      nama: '',
-      norek: ''
+      bank: "",
+      nama: "",
+      norek: "",
     },
-    jangkaWaktuPembayaran: '',
-    dendaKeterlambatan: '',
-    batasWaktuKlaim: '',
-    maksimalKompensasi: '',
-    penyelesaianSengketa: '',
-    forceMajeure: ''
-  })
+    jangkaWaktuPembayaran: "",
+    dendaKeterlambatan: "",
+    batasWaktuKlaim: "",
+    maksimalKompensasi: "",
+    penyelesaianSengketa: "",
+    forceMajeure: "",
+  });
 
   const steps = [
-    'Pilih Metode Input',
-    'Informasi Umum',
-    'Identitas Para Pihak',
-    'Ruang Lingkup',
-    'Administrasi Keuangan',
-    'Klaim & Sengketa'
-  ]
+    "Pilih Metode Input",
+    "Informasi Umum",
+    "Identitas Para Pihak",
+    "Ruang Lingkup",
+    "Administrasi Keuangan",
+    "Klaim & Sengketa",
+  ];
 
   const handleInputChange = (field: string, value: any, section?: string) => {
     if (section) {
-      setContractData(prev => ({
+      setContractData((prev) => ({
         ...prev,
         [section]: {
           ...(prev[section as keyof ContractData] as any),
-          [field]: value
-        }
-      }))
+          [field]: value,
+        },
+      }));
     } else {
-      setContractData(prev => ({
+      setContractData((prev) => ({
         ...prev,
-        [field]: value
-      }))
+        [field]: value,
+      }));
     }
-  }
+  };
 
   const isFieldDisabled = () => {
-    return inputMethod === 'upload' && uploadedFile !== null
-  }
+    return inputMethod === "upload" && uploadedFile !== null;
+  };
 
   // Helper function to calculate end date from start date and duration
-  const calculateEndDate = (startDate: Date | undefined, duration: string): Date | undefined => {
-    if (!startDate || !duration) return undefined
-    
-    const match = duration.match(/(\d+)\s*(hari|bulan|tahun|day|month|year)/i)
-    if (!match) return undefined
-    
-    const amount = parseInt(match[1])
-    const unit = match[2].toLowerCase()
-    const endDate = new Date(startDate)
-    
-    if (unit.includes('hari') || unit.includes('day')) {
-      endDate.setDate(endDate.getDate() + amount)
-    } else if (unit.includes('bulan') || unit.includes('month')) {
-      endDate.setMonth(endDate.getMonth() + amount)
-    } else if (unit.includes('tahun') || unit.includes('year')) {
-      endDate.setFullYear(endDate.getFullYear() + amount)
+  const calculateEndDate = (
+    startDate: Date | undefined,
+    duration: string
+  ): Date | undefined => {
+    if (!startDate || !duration) return undefined;
+
+    const match = duration.match(/(\d+)\s*(hari|bulan|tahun|day|month|year)/i);
+    if (!match) return undefined;
+
+    const amount = parseInt(match[1]);
+    const unit = match[2].toLowerCase();
+    const endDate = new Date(startDate);
+
+    if (unit.includes("hari") || unit.includes("day")) {
+      endDate.setDate(endDate.getDate() + amount);
+    } else if (unit.includes("bulan") || unit.includes("month")) {
+      endDate.setMonth(endDate.getMonth() + amount);
+    } else if (unit.includes("tahun") || unit.includes("year")) {
+      endDate.setFullYear(endDate.getFullYear() + amount);
     }
-    
-    return endDate
-  }
+
+    return endDate;
+  };
 
   // Function to handle contract generation
   const handleGenerateContract = async () => {
     try {
-      setIsGenerating(true)
-      
+      setIsGenerating(true);
+
       // Validate required fields
       const requiredFields = [
-        { field: contractData.nomorKontrak, name: 'Nomor Kontrak' },
-        { field: contractData.judul, name: 'Judul Kontrak' },
-        { field: contractData.tanggalMulai, name: 'Tanggal Mulai' },
-        { field: contractData.pihak1.namaPerusahaan, name: 'Nama Perusahaan Pihak 1' },
-        { field: contractData.pihak2.namaPerusahaan, name: 'Nama Perusahaan Pihak 2' },
+        { field: contractData.nomorKontrak, name: "Nomor Kontrak" },
+        { field: contractData.judul, name: "Judul Kontrak" },
+        { field: contractData.tanggalMulai, name: "Tanggal Mulai" },
+        {
+          field: contractData.pihak1.namaPerusahaan,
+          name: "Nama Perusahaan Pihak 1",
+        },
+        {
+          field: contractData.pihak2.namaPerusahaan,
+          name: "Nama Perusahaan Pihak 2",
+        },
       ];
 
-      const missingFields = requiredFields.filter(({ field }) => !field).map(({ name }) => name);
-      
+      const missingFields = requiredFields
+        .filter(({ field }) => !field)
+        .map(({ name }) => name);
+
       if (missingFields.length > 0) {
-        alert(`Harap isi field yang wajib: ${missingFields.join(', ')}`);
+        alert(`Harap isi field yang wajib: ${missingFields.join(", ")}`);
         setIsGenerating(false);
         return;
       }
 
       // Calculate end date from duration if not set
-      const endDate = calculateEndDate(contractData.tanggalMulai, contractData.durasi)
+      const endDate = calculateEndDate(
+        contractData.tanggalMulai,
+        contractData.durasi
+      );
       if (!endDate) {
-        alert('Format durasi tidak valid. Contoh: "12 bulan" atau "1 tahun"')
-        setIsGenerating(false)
-        return
+        alert('Format durasi tidak valid. Contoh: "12 bulan" atau "1 tahun"');
+        setIsGenerating(false);
+        return;
       }
 
       // Transform contract data to match database schema
       const contractPayload = {
         namakontrak: contractData.judul,
-        counterparty: contractData.pihak2.namaPerusahaan || 'Unknown',
-        type: 'partnership',
+        counterparty: contractData.pihak2.namaPerusahaan || "Unknown",
+        type: "partnership",
         nomorkontrak: contractData.nomorKontrak,
         judul: contractData.judul,
-        jenis: contractData.jenis || 'PARTNERSHIP',
+        jenis: contractData.jenis || "PARTNERSHIP",
         tanggalmulai: contractData.tanggalMulai,
         tanggalakhir: endDate,
-        
+
         // Pihak Pertama
         perusahaan1: contractData.pihak1.namaPerusahaan,
         direktur1: contractData.pihak1.namaDirektur,
@@ -238,7 +285,7 @@ export default function DraftPage({ initialInputMethod, initialFile, initialExtr
         email1: contractData.pihak1.email,
         npwp1: contractData.pihak1.npwp,
         nomorusaha1: contractData.pihak1.nomorUsaha,
-        
+
         // Pihak Kedua
         perusahaan2: contractData.pihak2.namaPerusahaan,
         direktur2: contractData.pihak2.namaDirektur,
@@ -247,7 +294,7 @@ export default function DraftPage({ initialInputMethod, initialFile, initialExtr
         email2: contractData.pihak2.email,
         npwp2: contractData.pihak2.npwp,
         nomorusaha2: contractData.pihak2.nomorUsaha,
-        
+
         // Ruang Lingkup
         jenislayanan: contractData.jenisLayanan,
         wilayahoperasi: contractData.wilayahOperasional,
@@ -255,175 +302,196 @@ export default function DraftPage({ initialInputMethod, initialFile, initialExtr
         hak1: contractData.hakKewajibanPihak1,
         hak2: contractData.hakKewajibanPihak2,
         syaratlayanan: contractData.syaratLayanan,
-        
+
         // Keuangan
-        nominal: parseFloat(contractData.nominal.replace(/[^\d.,]/g, '').replace(',', '.')) || 0,
+        nominal:
+          parseFloat(
+            contractData.nominal.replace(/[^\d.,]/g, "").replace(",", ".")
+          ) || 0,
         tenggatbayar: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000), // Default 30 days from now
         syaratbayar: contractData.syaratPembayaran,
         bank: contractData.caraPembayaran.bank,
         namapemilik: contractData.caraPembayaran.nama,
         norek: contractData.caraPembayaran.norek,
         denda: contractData.dendaKeterlambatan,
-        
+
         // Klaim dan Sengketa
         tenggatklaim: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000), // Default 14 days from now
-        makskompensasi: parseFloat(contractData.maksimalKompensasi.replace(/[^\d.,]/g, '').replace(',', '.')) || 0,
+        makskompensasi:
+          parseFloat(
+            contractData.maksimalKompensasi
+              .replace(/[^\d.,]/g, "")
+              .replace(",", ".")
+          ) || 0,
         sengketa: contractData.penyelesaianSengketa,
-        majeure: contractData.forceMajeure
-      }
+        majeure: contractData.forceMajeure,
+      };
 
-      console.log('🚀 Sending contract data:', contractPayload)
-      
+      console.log("🚀 Sending contract data:", contractPayload);
+
       // Call API to create contract
-      const response = await fetch('/api/contract', {
-        method: 'POST',
+      const response = await fetch("/api/contract", {
+        method: "POST",
         headers: {
-          'Content-Type': 'application/json',
+          "Content-Type": "application/json",
         },
         body: JSON.stringify(contractPayload),
-      })
+      });
 
-      const result = await response.json()
-      
+      const result = await response.json();
+
       if (result.success) {
-        console.log('✅ Contract created:', result.contract)
-        
+        console.log("✅ Contract created:", result.contract);
+
         // Show success message
         const successMessage = `Kontrak "${contractData.judul}" berhasil dibuat!\nID: ${result.contract?.id}\n\nAnda akan diarahkan ke dashboard...`;
         alert(successMessage);
-        
+
         // Redirect to dashboard to see the created contract
         setTimeout(() => {
-          window.location.href = '/dashboard'
-        }, 2000)
-        
+          window.location.href = "/dashboard";
+        }, 2000);
       } else {
-        console.error('❌ Failed to create contract:', result)
-        alert(`Gagal membuat kontrak:\n${result.error || 'Unknown error'}\n\nDetail: ${result.details || 'No details available'}`)
+        console.error("❌ Failed to create contract:", result);
+        alert(
+          `Gagal membuat kontrak:\n${
+            result.error || "Unknown error"
+          }\n\nDetail: ${result.details || "No details available"}`
+        );
       }
-      
     } catch (error) {
-      console.error('❌ Error generating contract:', error)
-      alert('Terjadi kesalahan saat membuat kontrak. Silakan coba lagi.')
+      console.error("❌ Error generating contract:", error);
+      alert("Terjadi kesalahan saat membuat kontrak. Silakan coba lagi.");
     } finally {
-      setIsGenerating(false)
+      setIsGenerating(false);
     }
-  }
+  };
 
-  const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0]
-    if (!file) return
+  const handleFileUpload = async (
+    event: React.ChangeEvent<HTMLInputElement>
+  ) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
 
-    await processFile(file)
-  }
+    await processFile(file);
+  };
 
   const processFile = async (file: File) => {
-    if (file.type !== 'application/pdf') {
-      alert('Hanya file PDF yang diperbolehkan!')
-      return
+    if (file.type !== "application/pdf") {
+      alert("Hanya file PDF yang diperbolehkan!");
+      return;
     }
 
     // Check file size (10MB limit)
     if (file.size > 10 * 1024 * 1024) {
-      alert('Ukuran file terlalu besar! Maksimal 10MB.')
-      return
+      alert("Ukuran file terlalu besar! Maksimal 10MB.");
+      return;
     }
 
-    setUploadedFile(file)
-    setIsScanning(true)
-    setScanProgress(0)
+    setUploadedFile(file);
+    setIsScanning(true);
+    setScanProgress(0);
 
     try {
       // Simulate PDF scanning progress
       const progressInterval = setInterval(() => {
-        setScanProgress(prev => {
+        setScanProgress((prev) => {
           if (prev >= 90) {
-            clearInterval(progressInterval)
-            return 90
+            clearInterval(progressInterval);
+            return 90;
           }
-          return prev + 10
-        })
-      }, 300)
+          return prev + 10;
+        });
+      }, 300);
 
       // Extract text from PDF
-      const extractedData = await extractPDFData(file)
-      
+      const extractedData = await extractPDFData(file);
+
       // Map extracted data to form fields
       if (extractedData) {
-        setContractData(extractedData)
+        setContractData(extractedData);
       }
 
-      setScanProgress(100)
+      setScanProgress(100);
       setTimeout(() => {
-        setIsScanning(false)
+        setIsScanning(false);
         // Auto advance to next step after successful scan
-        setCurrentStep(1)
-      }, 500)
-
+        setCurrentStep(1);
+      }, 500);
     } catch (error) {
-      console.error('Error processing PDF:', error)
-      alert('Gagal memproses PDF. Silakan coba lagi.')
-      setIsScanning(false)
-      setScanProgress(0)
-      setUploadedFile(null)
+      console.error("Error processing PDF:", error);
+      alert("Gagal memproses PDF. Silakan coba lagi.");
+      setIsScanning(false);
+      setScanProgress(0);
+      setUploadedFile(null);
     }
-  }
+  };
 
   const extractPDFData = async (file: File): Promise<ContractData> => {
     try {
       // Step 1: Extract raw text from PDF
       const formData = new FormData();
-      formData.append('fileName', file.name);
-      
+      formData.append("fileName", file.name);
+
       // First, get the raw text from PDF
-      const extractResponse = await fetch('/api/extract-text', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ fileName: file.name })
+      const extractResponse = await fetch("/api/extract-text", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ fileName: file.name }),
       });
 
       if (!extractResponse.ok) {
-        throw new Error('Failed to extract text from PDF');
+        throw new Error("Failed to extract text from PDF");
       }
 
       const extractData = await extractResponse.json();
-      
+
       // Convert coordinate data to plain text
-      const extractedText = extractData.textData
-        ?.map((item: any) => {
-          if (typeof item === 'string') return item;
-          if (item.text) return item.text;
-          if (item.str) return item.str;
-          return '';
-        })
-        .filter((text: string) => text.trim())
-        .join(' ') || '';
+      const extractedText =
+        extractData.textData
+          ?.map((item: any) => {
+            if (typeof item === "string") return item;
+            if (item.text) return item.text;
+            if (item.str) return item.str;
+            return "";
+          })
+          .filter((text: string) => text.trim())
+          .join(" ") || "";
 
       if (!extractedText || extractedText.length < 100) {
-        throw new Error('Insufficient text content found in PDF');
+        throw new Error("Insufficient text content found in PDF");
       }
 
       console.log(`📄 Extracted ${extractedText.length} characters from PDF`);
 
       // Step 2: Use AI to extract structured data
-      const aiResponse = await fetch('/api/draft', {
-        method: 'POST',
+      const aiResponse = await fetch("/api/draft", {
+        method: "POST",
         headers: {
-          'Content-Type': 'application/json'
+          "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          contractType: 'partnership',
+          contractType: "partnership",
           requirements: extractedText,
-          assistanceType: 'extract',
+          assistanceType: "extract",
           additionalData: {
-            extractionType: 'form_data',
+            extractionType: "form_data",
             targetFields: [
-              'nomorKontrak', 'judul', 'jenis', 'tanggalMulai', 'durasi',
-              'pihak1', 'pihak2', 'jenisLayanan', 'deskripsiLayanan',
-              'wilayahOperasional', 'nominal', 'syaratPembayaran'
-            ]
-          }
-        })
+              "nomorKontrak",
+              "judul",
+              "jenis",
+              "tanggalMulai",
+              "durasi",
+              "pihak1",
+              "pihak2",
+              "jenisLayanan",
+              "deskripsiLayanan",
+              "wilayahOperasional",
+              "nominal",
+              "syaratPembayaran",
+            ],
+          },
+        }),
       });
 
       if (!aiResponse.ok) {
@@ -431,20 +499,19 @@ export default function DraftPage({ initialInputMethod, initialFile, initialExtr
       }
 
       const aiData = await aiResponse.json();
-      
+
       if (!aiData.success) {
-        throw new Error(aiData.error || 'AI analysis failed');
+        throw new Error(aiData.error || "AI analysis failed");
       }
 
-      console.log('🤖 AI analysis completed successfully');
+      console.log("🤖 AI analysis completed successfully");
 
       // Step 3: Parse AI response to form data
       const contractData = parseAIResponseToContractData(aiData.assistance);
-      
-      return contractData;
 
+      return contractData;
     } catch (error) {
-      console.error('❌ Error extracting PDF data:', error);
+      console.error("❌ Error extracting PDF data:", error);
       throw error;
     }
   };
@@ -452,63 +519,97 @@ export default function DraftPage({ initialInputMethod, initialFile, initialExtr
   // New function to parse AI response into ContractData format
   const parseAIResponseToContractData = (aiResponse: string): ContractData => {
     try {
-      console.log('📊 Parsing AI response to contract data...');
-      
+      console.log("📊 Parsing AI response to contract data...");
+
       // Initialize with empty data
       const contractData: ContractData = {
-        nomorKontrak: '',
-        judul: '',
-        jenis: 'PARTNERSHIP',
+        nomorKontrak: "",
+        judul: "",
+        jenis: "PARTNERSHIP",
         tanggalMulai: undefined,
-        durasi: '',
+        durasi: "",
         pihak1: {
-          namaPerusahaan: '', namaDirektur: '', alamat: '', nomorTelp: '', email: '', npwp: '', nomorUsaha: ''
+          namaPerusahaan: "",
+          namaDirektur: "",
+          alamat: "",
+          nomorTelp: "",
+          email: "",
+          npwp: "",
+          nomorUsaha: "",
         },
         pihak2: {
-          namaPerusahaan: '', namaDirektur: '', alamat: '', nomorTelp: '', email: '', npwp: '', nomorUsaha: ''
+          namaPerusahaan: "",
+          namaDirektur: "",
+          alamat: "",
+          nomorTelp: "",
+          email: "",
+          npwp: "",
+          nomorUsaha: "",
         },
-        jenisLayanan: '', deskripsiLayanan: '', wilayahOperasional: '', hakKewajibanPihak1: '', hakKewajibanPihak2: '', syaratLayanan: '',
-        nominal: '', syaratPembayaran: '', caraPembayaran: { bank: '', nama: '', norek: '' }, jangkaWaktuPembayaran: '', dendaKeterlambatan: '',
-        batasWaktuKlaim: '', maksimalKompensasi: '', penyelesaianSengketa: '', forceMajeure: ''
+        jenisLayanan: "",
+        deskripsiLayanan: "",
+        wilayahOperasional: "",
+        hakKewajibanPihak1: "",
+        hakKewajibanPihak2: "",
+        syaratLayanan: "",
+        nominal: "",
+        syaratPembayaran: "",
+        caraPembayaran: { bank: "", nama: "", norek: "" },
+        jangkaWaktuPembayaran: "",
+        dendaKeterlambatan: "",
+        batasWaktuKlaim: "",
+        maksimalKompensasi: "",
+        penyelesaianSengketa: "",
+        forceMajeure: "",
       };
 
       // Parse different sections of the AI response
       const sections = aiResponse.split(/(?=##|\*\*)/);
-      
-      sections.forEach(section => {
+
+      sections.forEach((section) => {
         const lowerSection = section.toLowerCase();
-        
+
         // Extract contract number
-        const contractNumMatch = section.match(/(?:contract number|nomor kontrak|no\.\s*kontrak)[\s:]*([^\n\r]+)/i);
+        const contractNumMatch = section.match(
+          /(?:contract number|nomor kontrak|no\.\s*kontrak)[\s:]*([^\n\r]+)/i
+        );
         if (contractNumMatch && !contractData.nomorKontrak) {
           contractData.nomorKontrak = contractNumMatch[1].trim();
         }
 
         // Extract contract title
-        const titleMatch = section.match(/(?:title|judul|contract title)[\s:]*([^\n\r]+)/i);
+        const titleMatch = section.match(
+          /(?:title|judul|contract title)[\s:]*([^\n\r]+)/i
+        );
         if (titleMatch && !contractData.judul) {
           contractData.judul = titleMatch[1].trim();
         }
 
         // Extract dates
-        const dateMatch = section.match(/(\d{1,2}[\/\-]\d{1,2}[\/\-]\d{4}|\d{4}[\/\-]\d{1,2}[\/\-]\d{1,2})/);
+        const dateMatch = section.match(
+          /(\d{1,2}[\/\-]\d{1,2}[\/\-]\d{4}|\d{4}[\/\-]\d{1,2}[\/\-]\d{1,2})/
+        );
         if (dateMatch && !contractData.tanggalMulai) {
           try {
             const dateStr = dateMatch[1];
-            const date = new Date(dateStr.replace(/[\/\-]/g, '-'));
+            const date = new Date(dateStr.replace(/[\/\-]/g, "-"));
             if (!isNaN(date.getTime())) {
               contractData.tanggalMulai = date;
             }
           } catch (e) {
-            console.warn('Failed to parse date:', dateMatch[1]);
+            console.warn("Failed to parse date:", dateMatch[1]);
           }
         }
 
         // Extract company names
-        const companyMatches = section.match(/(?:company|perusahaan|pt\.?\s*|cv\.?\s*)([^\n\r,;]+)/gi);
+        const companyMatches = section.match(
+          /(?:company|perusahaan|pt\.?\s*|cv\.?\s*)([^\n\r,;]+)/gi
+        );
         if (companyMatches) {
           companyMatches.forEach((match, index) => {
-            const cleanCompany = match.replace(/^(?:company|perusahaan|pt\.?\s*|cv\.?\s*)/i, '').trim();
+            const cleanCompany = match
+              .replace(/^(?:company|perusahaan|pt\.?\s*|cv\.?\s*)/i, "")
+              .trim();
             if (cleanCompany && cleanCompany.length > 2) {
               if (index === 0 && !contractData.pihak1.namaPerusahaan) {
                 contractData.pihak1.namaPerusahaan = cleanCompany;
@@ -520,21 +621,31 @@ export default function DraftPage({ initialInputMethod, initialFile, initialExtr
         }
 
         // Extract monetary values
-        const moneyMatch = section.match(/(?:rp\.?\s*|idr\s*|rupiah\s*)?([\d.,]+)(?:\s*(?:juta|million|miliar|billion))?/i);
+        const moneyMatch = section.match(
+          /(?:rp\.?\s*|idr\s*|rupiah\s*)?([\d.,]+)(?:\s*(?:juta|million|miliar|billion))?/i
+        );
         if (moneyMatch && !contractData.nominal) {
           contractData.nominal = moneyMatch[0].trim();
         }
 
         // Extract service descriptions
-        if (lowerSection.includes('service') || lowerSection.includes('layanan') || lowerSection.includes('scope')) {
-          const serviceMatch = section.match(/(?:service|layanan|scope)[\s:]*([^\n\r]{20,200})/i);
+        if (
+          lowerSection.includes("service") ||
+          lowerSection.includes("layanan") ||
+          lowerSection.includes("scope")
+        ) {
+          const serviceMatch = section.match(
+            /(?:service|layanan|scope)[\s:]*([^\n\r]{20,200})/i
+          );
           if (serviceMatch && !contractData.jenisLayanan) {
             contractData.jenisLayanan = serviceMatch[1].trim();
           }
         }
 
         // Extract addresses
-        const addressMatch = section.match(/(?:address|alamat)[\s:]*([^\n\r]{10,100})/i);
+        const addressMatch = section.match(
+          /(?:address|alamat)[\s:]*([^\n\r]{10,100})/i
+        );
         if (addressMatch) {
           const address = addressMatch[1].trim();
           if (!contractData.pihak1.alamat) {
@@ -569,89 +680,140 @@ export default function DraftPage({ initialInputMethod, initialFile, initialExtr
 
       // Set defaults if certain fields are empty
       if (!contractData.jenis) {
-        contractData.jenis = 'PARTNERSHIP';
-      }
-      
-      if (!contractData.durasi) {
-        contractData.durasi = '12 bulan'; // Default duration
+        contractData.jenis = "PARTNERSHIP";
       }
 
-      console.log('✅ Successfully parsed contract data from AI response');
-      console.log('📋 Extracted data:', {
+      if (!contractData.durasi) {
+        contractData.durasi = "12 bulan"; // Default duration
+      }
+
+      console.log("✅ Successfully parsed contract data from AI response");
+      console.log("📋 Extracted data:", {
         nomorKontrak: contractData.nomorKontrak,
         judul: contractData.judul,
         hasCompany1: !!contractData.pihak1.namaPerusahaan,
         hasCompany2: !!contractData.pihak2.namaPerusahaan,
         hasDate: !!contractData.tanggalMulai,
-        hasNominal: !!contractData.nominal
+        hasNominal: !!contractData.nominal,
       });
 
       return contractData;
-
     } catch (error) {
-      console.error('❌ Error parsing AI response:', error);
-      
+      console.error("❌ Error parsing AI response:", error);
+
       // Return minimal data structure if parsing fails
       return {
-        nomorKontrak: 'PKS-' + Date.now(),
-        judul: 'Kontrak Partnership',
-        jenis: 'PARTNERSHIP',
+        nomorKontrak: "PKS-" + Date.now(),
+        judul: "Kontrak Partnership",
+        jenis: "PARTNERSHIP",
         tanggalMulai: new Date(),
-        durasi: '12 bulan',
+        durasi: "12 bulan",
         pihak1: {
-          namaPerusahaan: '', namaDirektur: '', alamat: '', nomorTelp: '', email: '', npwp: '', nomorUsaha: ''
+          namaPerusahaan: "",
+          namaDirektur: "",
+          alamat: "",
+          nomorTelp: "",
+          email: "",
+          npwp: "",
+          nomorUsaha: "",
         },
         pihak2: {
-          namaPerusahaan: '', namaDirektur: '', alamat: '', nomorTelp: '', email: '', npwp: '', nomorUsaha: ''
+          namaPerusahaan: "",
+          namaDirektur: "",
+          alamat: "",
+          nomorTelp: "",
+          email: "",
+          npwp: "",
+          nomorUsaha: "",
         },
-        jenisLayanan: '', deskripsiLayanan: '', wilayahOperasional: '', hakKewajibanPihak1: '', hakKewajibanPihak2: '', syaratLayanan: '',
-        nominal: '', syaratPembayaran: '', caraPembayaran: { bank: '', nama: '', norek: '' }, jangkaWaktuPembayaran: '', dendaKeterlambatan: '',
-        batasWaktuKlaim: '', maksimalKompensasi: '', penyelesaianSengketa: '', forceMajeure: ''
+        jenisLayanan: "",
+        deskripsiLayanan: "",
+        wilayahOperasional: "",
+        hakKewajibanPihak1: "",
+        hakKewajibanPihak2: "",
+        syaratLayanan: "",
+        nominal: "",
+        syaratPembayaran: "",
+        caraPembayaran: { bank: "", nama: "", norek: "" },
+        jangkaWaktuPembayaran: "",
+        dendaKeterlambatan: "",
+        batasWaktuKlaim: "",
+        maksimalKompensasi: "",
+        penyelesaianSengketa: "",
+        forceMajeure: "",
       };
     }
   };
 
   const nextStep = () => {
     if (currentStep < steps.length - 1) {
-      setCurrentStep(currentStep + 1)
+      setCurrentStep(currentStep + 1);
     }
-  }
+  };
 
   const prevStep = () => {
-    if (currentStep > 0) {
-      setCurrentStep(currentStep - 1)
+    // Jika user menekan kembali dari step pertama (index 1) -> reset ke parent
+    if (currentStep === 1) {
+      // Panggil callback parent untuk mengosongkan contract type & input method
+      onReset?.();
+      return;
     }
-  }
+    if (currentStep > 0) {
+      setCurrentStep(currentStep - 1);
+    }
+  };
 
   return (
     <div className="container mx-auto p-6 max-w-4xl">
       <div className="mb-8">
-        <h1 className="text-3xl font-bold text-gray-900 mb-2">Draft Kontrak Partnership</h1>
-        <p className="text-gray-600">Buat kontrak partnership dengan mudah dan lengkap</p>
+        <h1 className="text-3xl font-bold text-gray-900 mb-2">
+          Draft Kontrak Partnership
+        </h1>
+        <p className="text-gray-600">
+          Buat kontrak partnership dengan mudah dan lengkap
+        </p>
       </div>
 
       {/* Progress Steps */}
       <div className="mb-8">
         <div className="flex items-center justify-between">
-          {steps.map((step, index) => (
-            <div key={index} className="flex items-center">
-              <div className={`
-                w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium
-                ${index <= currentStep 
-                  ? 'bg-blue-600 text-white' 
-                  : 'bg-gray-200 text-gray-600'
-                }
-              `}>
-                {index + 1}
-              </div>
-              <span className={`ml-2 text-sm ${index <= currentStep ? 'text-blue-600' : 'text-gray-500'}`}>
-                {step}
-              </span>
-              {index < steps.length - 1 && (
-                <div className={`w-8 h-0.5 mx-4 ${index < currentStep ? 'bg-blue-600' : 'bg-gray-200'}`} />
-              )}
-            </div>
-          ))}
+          {steps.map((step, index) => {
+            const isActive = index === currentStep;
+            const isCompleted = index < currentStep;
+            const circleClass = isActive
+              ? "bg-transparent border-2 border-blue-600 text-blue-600"
+              : isCompleted
+              ? "bg-blue-600 text-white"
+              : "bg-gray-200 text-gray-700";
+            const labelClass = isActive
+              ? "text-blue-600"
+              : isCompleted
+              ? "text-blue-600"
+              : "text-gray-500";
+            const lineClass =
+              index < currentStep ? "bg-blue-600" : "bg-gray-200";
+            return (
+              <React.Fragment key={index}>
+                <div className="flex flex-col items-center text-center min-w-[70px]">
+                  <div
+                    className={`w-9 h-9 rounded-full flex items-center justify-center text-sm font-semibold transition-colors ${circleClass}`}
+                  >
+                    {index + 1}
+                  </div>
+                  <span
+                    className={`mt-2 text-[11px] md:text-xs font-medium leading-snug ${labelClass}`}
+                  >
+                    {step}
+                  </span>
+                </div>
+                {index < steps.length - 1 && (
+                  <div
+                    className={`flex-1 h-px mx-2 md:mx-4 transition-colors ${lineClass}`}
+                  />
+                )}
+              </React.Fragment>
+            );
+          })}
         </div>
       </div>
 
@@ -669,158 +831,6 @@ export default function DraftPage({ initialInputMethod, initialFile, initialExtr
           </CardDescription>
         </CardHeader>
         <CardContent>
-          {/* Step 0: Pilih Metode Input */}
-          {currentStep === 0 && (
-            <div className="space-y-6">
-              <div className="text-center mb-6">
-                <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg">
-                  <p className="text-blue-800 font-medium">Kontrak Partnership</p>
-                  <p className="text-blue-600 text-sm mt-1">
-                    Kontrak kerjasama antara perusahaan untuk hubungan bisnis
-                  </p>
-                </div>
-              </div>
-
-              <div className="grid md:grid-cols-2 gap-6">
-                <Card 
-                  className={`cursor-pointer border-2 ${inputMethod === 'manual' ? 'border-blue-500 bg-blue-50' : 'border-gray-200'}`}
-                  onClick={() => setInputMethod('manual')}
-                >
-                  <CardContent className="p-6 text-center">
-                    <FileText className="w-12 h-12 mx-auto mb-4 text-blue-600" />
-                    <h3 className="font-semibold text-lg mb-2">Isi Manual</h3>
-                    <p className="text-gray-600">Isi form secara manual langkah demi langkah</p>
-                  </CardContent>
-                </Card>
-
-                <Card 
-                  className={`cursor-pointer border-2 ${inputMethod === 'upload' ? 'border-blue-500 bg-blue-50' : 'border-gray-200'}`}
-                  onClick={() => setInputMethod('upload')}
-                >
-                  <CardContent className="p-6 text-center">
-                    <Upload className="w-12 h-12 mx-auto mb-4 text-blue-600" />
-                    <h3 className="font-semibold text-lg mb-2">Upload Dokumen</h3>
-                    <p className="text-gray-600">Upload dokumen yang sudah ada untuk dianalisis</p>
-                  </CardContent>
-                </Card>
-              </div>
-
-              {inputMethod === 'upload' && (
-                <div className="mt-6">
-                  {!uploadedFile && !isScanning && (
-                    <div 
-                      className="p-6 border-2 border-dashed border-gray-300 rounded-lg text-center hover:border-blue-400 transition-colors cursor-pointer"
-                      onClick={() => fileInputRef.current?.click()}
-                      onDragOver={(e) => {
-                        e.preventDefault()
-                        e.currentTarget.classList.add('border-blue-400', 'bg-blue-50')
-                      }}
-                      onDragLeave={(e) => {
-                        e.preventDefault()
-                        e.currentTarget.classList.remove('border-blue-400', 'bg-blue-50')
-                      }}
-                      onDrop={async (e) => {
-                        e.preventDefault()
-                        e.currentTarget.classList.remove('border-blue-400', 'bg-blue-50')
-                        const files = Array.from(e.dataTransfer.files)
-                        if (files.length > 0) {
-                          await processFile(files[0])
-                        }
-                      }}
-                    >
-                      <Upload className="w-12 h-12 mx-auto mb-4 text-gray-400" />
-                      <p className="text-gray-600 mb-2">Upload file PDF kontrak untuk analisis otomatis</p>
-                      <p className="text-sm text-gray-500 mb-4">
-                        Drag & drop file PDF atau klik untuk browse
-                        <br />
-                        <span className="text-xs text-gray-400">Format: PDF • Ukuran maksimal: 10MB</span>
-                      </p>
-                      
-                      <Button variant="outline" type="button">
-                        <Upload className="w-4 h-4 mr-2" />
-                        Pilih File PDF
-                      </Button>
-                      
-                      <input
-                        ref={fileInputRef}
-                        type="file"
-                        accept=".pdf,application/pdf"
-                        onChange={handleFileUpload}
-                        className="hidden"
-                      />
-                    </div>
-                  )}
-
-                  {isScanning && (
-                    <div className="p-6 border-2 border-blue-200 bg-blue-50 rounded-lg">
-                      <div className="text-center mb-4">
-                        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-                        <h3 className="font-semibold text-lg text-blue-900">Memproses Dokumen PDF</h3>
-                        <p className="text-blue-700 mb-4">Menganalisis dan mengekstrak informasi kontrak...</p>
-                      </div>
-                      
-                      <div className="w-full bg-blue-200 rounded-full h-3 mb-2">
-                        <div 
-                          className="bg-blue-600 h-3 rounded-full transition-all duration-300 ease-out"
-                          style={{ width: `${scanProgress}%` }}
-                        ></div>
-                      </div>
-                      <p className="text-center text-sm text-blue-600">{scanProgress}% selesai</p>
-                    </div>
-                  )}
-
-                  {uploadedFile && !isScanning && (
-                    <div className="p-4 border-2 border-green-200 bg-green-50 rounded-lg">
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center">
-                          <FileText className="w-8 h-8 text-green-600 mr-3" />
-                          <div>
-                            <p className="font-semibold text-green-900">{uploadedFile.name}</p>
-                            <p className="text-sm text-green-700">
-                              Dokumen berhasil diproses dan data telah dipetakan ke form
-                            </p>
-                          </div>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <Button 
-                            variant="outline" 
-                            size="sm"
-                            onClick={() => {
-                              setUploadedFile(null)
-                              setInputMethod(null)
-                              // Reset contract data to empty state
-                              setContractData({
-                                nomorKontrak: '',
-                                judul: '',
-                                jenis: 'PARTNERSHIP',
-                                tanggalMulai: undefined,
-                                durasi: '',
-                                pihak1: {
-                                  namaPerusahaan: '', namaDirektur: '', alamat: '', nomorTelp: '', email: '', npwp: '', nomorUsaha: ''
-                                },
-                                pihak2: {
-                                  namaPerusahaan: '', namaDirektur: '', alamat: '', nomorTelp: '', email: '', npwp: '', nomorUsaha: ''
-                                },
-                                jenisLayanan: '', deskripsiLayanan: '', wilayahOperasional: '', hakKewajibanPihak1: '', hakKewajibanPihak2: '', syaratLayanan: '',
-                                nominal: '', syaratPembayaran: '', caraPembayaran: { bank: '', nama: '', norek: '' }, jangkaWaktuPembayaran: '', dendaKeterlambatan: '',
-                                batasWaktuKlaim: '', maksimalKompensasi: '', penyelesaianSengketa: '', forceMajeure: ''
-                              })
-                            }}
-                          >
-                            Hapus & Mulai Ulang
-                          </Button>
-                          <div className="text-green-600">
-                            <CheckCircle className="w-6 h-6" />
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  )}
-                </div>
-              )}
-            </div>
-          )}
-
           {/* Step 1: Informasi Umum */}
           {currentStep === 1 && (
             <div className="space-y-6">
@@ -833,24 +843,31 @@ export default function DraftPage({ initialInputMethod, initialFile, initialExtr
                     </p>
                   </div>
                   <p className="text-blue-600 text-sm mt-1">
-                    Anda dapat meninjau data di bawah ini. Field tidak dapat diedit karena data berasal dari scan dokumen.
+                    Anda dapat meninjau data di bawah ini. Field tidak dapat
+                    diedit karena data berasal dari scan dokumen.
                   </p>
                 </div>
               )}
               <div className="grid md:grid-cols-2 gap-6">
                 <div>
                   <Label htmlFor="nomorKontrak">Nomor Kontrak</Label>
-                  <Input 
+                  <Input
                     id="nomorKontrak"
                     value={contractData.nomorKontrak}
-                    onChange={(e) => handleInputChange('nomorKontrak', e.target.value)}
+                    onChange={(e) =>
+                      handleInputChange("nomorKontrak", e.target.value)
+                    }
                     placeholder="Masukkan nomor kontrak"
                     disabled={isFieldDisabled()}
                   />
                 </div>
                 <div>
                   <Label htmlFor="jenis">Jenis Kontrak</Label>
-                  <Select value={contractData.jenis} onValueChange={(value) => handleInputChange('jenis', value)} disabled={isFieldDisabled()}>
+                  <Select
+                    value={contractData.jenis}
+                    onValueChange={(value) => handleInputChange("jenis", value)}
+                    disabled={isFieldDisabled()}
+                  >
                     <SelectTrigger>
                       <SelectValue />
                     </SelectTrigger>
@@ -865,10 +882,10 @@ export default function DraftPage({ initialInputMethod, initialFile, initialExtr
 
               <div>
                 <Label htmlFor="judul">Judul Kontrak</Label>
-                <Input 
+                <Input
                   id="judul"
                   value={contractData.judul}
-                  onChange={(e) => handleInputChange('judul', e.target.value)}
+                  onChange={(e) => handleInputChange("judul", e.target.value)}
                   placeholder="Masukkan judul kontrak"
                   disabled={isFieldDisabled()}
                 />
@@ -879,26 +896,36 @@ export default function DraftPage({ initialInputMethod, initialFile, initialExtr
                   <Label>Tanggal Mulai</Label>
                   <Popover>
                     <PopoverTrigger asChild>
-                      <Button variant="outline" className="w-full justify-start text-left font-normal" disabled={isFieldDisabled()}>
+                      <Button
+                        variant="outline"
+                        className="w-full justify-start text-left font-normal"
+                        disabled={isFieldDisabled()}
+                      >
                         <CalendarIcon className="mr-2 h-4 w-4" />
-                        {contractData.tanggalMulai ? format(contractData.tanggalMulai, "dd/MM/yyyy") : "Pilih tanggal"}
+                        {contractData.tanggalMulai
+                          ? format(contractData.tanggalMulai, "dd/MM/yyyy")
+                          : "Pilih tanggal"}
                       </Button>
                     </PopoverTrigger>
                     <PopoverContent className="w-auto p-0">
                       <Calendar
                         mode="single"
                         selected={contractData.tanggalMulai}
-                        onSelect={(date) => handleInputChange('tanggalMulai', date)}
+                        onSelect={(date) =>
+                          handleInputChange("tanggalMulai", date)
+                        }
                       />
                     </PopoverContent>
                   </Popover>
                 </div>
                 <div>
                   <Label htmlFor="durasi">Durasi Perjanjian</Label>
-                  <Input 
+                  <Input
                     id="durasi"
                     value={contractData.durasi}
-                    onChange={(e) => handleInputChange('durasi', e.target.value)}
+                    onChange={(e) =>
+                      handleInputChange("durasi", e.target.value)
+                    }
                     placeholder="Contoh: 12 bulan"
                     disabled={isFieldDisabled()}
                   />
@@ -915,158 +942,219 @@ export default function DraftPage({ initialInputMethod, initialFile, initialExtr
                   <div className="flex items-center">
                     <FileText className="w-5 h-5 text-blue-600 mr-2" />
                     <p className="text-blue-800 font-medium">
-                      Data identitas para pihak telah diisi otomatis dari dokumen PDF
+                      Data identitas para pihak telah diisi otomatis dari
+                      dokumen PDF
                     </p>
                   </div>
                 </div>
               )}
               <Tabs defaultValue="pihak1" className="w-full">
-              <TabsList className="grid w-full grid-cols-2">
-                <TabsTrigger value="pihak1">Pihak Pertama</TabsTrigger>
-                <TabsTrigger value="pihak2">Pihak Kedua</TabsTrigger>
-              </TabsList>
-              
-              <TabsContent value="pihak1" className="space-y-6">
-                <div className="grid md:grid-cols-2 gap-6">
-                  <div>
-                    <Label htmlFor="namaPerusahaan1">Nama Perusahaan</Label>
-                    <Input 
-                      id="namaPerusahaan1"
-                      value={contractData.pihak1.namaPerusahaan}
-                      onChange={(e) => handleInputChange('namaPerusahaan', e.target.value, 'pihak1')}
-                      disabled={isFieldDisabled()}
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="namaDirektur1">Nama Direktur</Label>
-                    <Input 
-                      id="namaDirektur1"
-                      value={contractData.pihak1.namaDirektur}
-                      onChange={(e) => handleInputChange('namaDirektur', e.target.value, 'pihak1')}
-                    />
-                  </div>
-                </div>
-                
-                <div>
-                  <Label htmlFor="alamat1">Alamat Perusahaan</Label>
-                  <Textarea 
-                    id="alamat1"
-                    value={contractData.pihak1.alamat}
-                    onChange={(e) => handleInputChange('alamat', e.target.value, 'pihak1')}
-                    rows={3}
-                  />
-                </div>
+                <TabsList className="grid w-full grid-cols-2">
+                  <TabsTrigger value="pihak1">Pihak Pertama</TabsTrigger>
+                  <TabsTrigger value="pihak2">Pihak Kedua</TabsTrigger>
+                </TabsList>
 
-                <div className="grid md:grid-cols-2 gap-6">
-                  <div>
-                    <Label htmlFor="nomorTelp1">Nomor Telepon</Label>
-                    <Input 
-                      id="nomorTelp1"
-                      value={contractData.pihak1.nomorTelp}
-                      onChange={(e) => handleInputChange('nomorTelp', e.target.value, 'pihak1')}
-                    />
+                <TabsContent value="pihak1" className="space-y-6">
+                  <div className="grid md:grid-cols-2 gap-6">
+                    <div>
+                      <Label htmlFor="namaPerusahaan1">Nama Perusahaan</Label>
+                      <Input
+                        id="namaPerusahaan1"
+                        value={contractData.pihak1.namaPerusahaan}
+                        onChange={(e) =>
+                          handleInputChange(
+                            "namaPerusahaan",
+                            e.target.value,
+                            "pihak1"
+                          )
+                        }
+                        disabled={isFieldDisabled()}
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="namaDirektur1">Nama Direktur</Label>
+                      <Input
+                        id="namaDirektur1"
+                        value={contractData.pihak1.namaDirektur}
+                        onChange={(e) =>
+                          handleInputChange(
+                            "namaDirektur",
+                            e.target.value,
+                            "pihak1"
+                          )
+                        }
+                      />
+                    </div>
                   </div>
-                  <div>
-                    <Label htmlFor="email1">Email</Label>
-                    <Input 
-                      id="email1"
-                      type="email"
-                      value={contractData.pihak1.email}
-                      onChange={(e) => handleInputChange('email', e.target.value, 'pihak1')}
-                    />
-                  </div>
-                </div>
 
-                <div className="grid md:grid-cols-2 gap-6">
                   <div>
-                    <Label htmlFor="npwp1">NPWP</Label>
-                    <Input 
-                      id="npwp1"
-                      value={contractData.pihak1.npwp}
-                      onChange={(e) => handleInputChange('npwp', e.target.value, 'pihak1')}
+                    <Label htmlFor="alamat1">Alamat Perusahaan</Label>
+                    <Textarea
+                      id="alamat1"
+                      value={contractData.pihak1.alamat}
+                      onChange={(e) =>
+                        handleInputChange("alamat", e.target.value, "pihak1")
+                      }
+                      rows={3}
                     />
                   </div>
-                  <div>
-                    <Label htmlFor="nomorUsaha1">Nomor Usaha</Label>
-                    <Input 
-                      id="nomorUsaha1"
-                      value={contractData.pihak1.nomorUsaha}
-                      onChange={(e) => handleInputChange('nomorUsaha', e.target.value, 'pihak1')}
-                    />
-                  </div>
-                </div>
-              </TabsContent>
 
-              <TabsContent value="pihak2" className="space-y-6">
-                <div className="grid md:grid-cols-2 gap-6">
-                  <div>
-                    <Label htmlFor="namaPerusahaan2">Nama Perusahaan</Label>
-                    <Input 
-                      id="namaPerusahaan2"
-                      value={contractData.pihak2.namaPerusahaan}
-                      onChange={(e) => handleInputChange('namaPerusahaan', e.target.value, 'pihak2')}
-                    />
+                  <div className="grid md:grid-cols-2 gap-6">
+                    <div>
+                      <Label htmlFor="nomorTelp1">Nomor Telepon</Label>
+                      <Input
+                        id="nomorTelp1"
+                        value={contractData.pihak1.nomorTelp}
+                        onChange={(e) =>
+                          handleInputChange(
+                            "nomorTelp",
+                            e.target.value,
+                            "pihak1"
+                          )
+                        }
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="email1">Email</Label>
+                      <Input
+                        id="email1"
+                        type="email"
+                        value={contractData.pihak1.email}
+                        onChange={(e) =>
+                          handleInputChange("email", e.target.value, "pihak1")
+                        }
+                      />
+                    </div>
                   </div>
-                  <div>
-                    <Label htmlFor="namaDirektur2">Nama Direktur</Label>
-                    <Input 
-                      id="namaDirektur2"
-                      value={contractData.pihak2.namaDirektur}
-                      onChange={(e) => handleInputChange('namaDirektur', e.target.value, 'pihak2')}
-                    />
-                  </div>
-                </div>
-                
-                <div>
-                  <Label htmlFor="alamat2">Alamat Perusahaan</Label>
-                  <Textarea 
-                    id="alamat2"
-                    value={contractData.pihak2.alamat}
-                    onChange={(e) => handleInputChange('alamat', e.target.value, 'pihak2')}
-                    rows={3}
-                  />
-                </div>
 
-                <div className="grid md:grid-cols-2 gap-6">
-                  <div>
-                    <Label htmlFor="nomorTelp2">Nomor Telepon</Label>
-                    <Input 
-                      id="nomorTelp2"
-                      value={contractData.pihak2.nomorTelp}
-                      onChange={(e) => handleInputChange('nomorTelp', e.target.value, 'pihak2')}
-                    />
+                  <div className="grid md:grid-cols-2 gap-6">
+                    <div>
+                      <Label htmlFor="npwp1">NPWP</Label>
+                      <Input
+                        id="npwp1"
+                        value={contractData.pihak1.npwp}
+                        onChange={(e) =>
+                          handleInputChange("npwp", e.target.value, "pihak1")
+                        }
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="nomorUsaha1">Nomor Usaha</Label>
+                      <Input
+                        id="nomorUsaha1"
+                        value={contractData.pihak1.nomorUsaha}
+                        onChange={(e) =>
+                          handleInputChange(
+                            "nomorUsaha",
+                            e.target.value,
+                            "pihak1"
+                          )
+                        }
+                      />
+                    </div>
                   </div>
-                  <div>
-                    <Label htmlFor="email2">Email</Label>
-                    <Input 
-                      id="email2"
-                      type="email"
-                      value={contractData.pihak2.email}
-                      onChange={(e) => handleInputChange('email', e.target.value, 'pihak2')}
-                    />
-                  </div>
-                </div>
+                </TabsContent>
 
-                <div className="grid md:grid-cols-2 gap-6">
+                <TabsContent value="pihak2" className="space-y-6">
+                  <div className="grid md:grid-cols-2 gap-6">
+                    <div>
+                      <Label htmlFor="namaPerusahaan2">Nama Perusahaan</Label>
+                      <Input
+                        id="namaPerusahaan2"
+                        value={contractData.pihak2.namaPerusahaan}
+                        onChange={(e) =>
+                          handleInputChange(
+                            "namaPerusahaan",
+                            e.target.value,
+                            "pihak2"
+                          )
+                        }
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="namaDirektur2">Nama Direktur</Label>
+                      <Input
+                        id="namaDirektur2"
+                        value={contractData.pihak2.namaDirektur}
+                        onChange={(e) =>
+                          handleInputChange(
+                            "namaDirektur",
+                            e.target.value,
+                            "pihak2"
+                          )
+                        }
+                      />
+                    </div>
+                  </div>
+
                   <div>
-                    <Label htmlFor="npwp2">NPWP</Label>
-                    <Input 
-                      id="npwp2"
-                      value={contractData.pihak2.npwp}
-                      onChange={(e) => handleInputChange('npwp', e.target.value, 'pihak2')}
+                    <Label htmlFor="alamat2">Alamat Perusahaan</Label>
+                    <Textarea
+                      id="alamat2"
+                      value={contractData.pihak2.alamat}
+                      onChange={(e) =>
+                        handleInputChange("alamat", e.target.value, "pihak2")
+                      }
+                      rows={3}
                     />
                   </div>
-                  <div>
-                    <Label htmlFor="nomorUsaha2">Nomor Usaha</Label>
-                    <Input 
-                      id="nomorUsaha2"
-                      value={contractData.pihak2.nomorUsaha}
-                      onChange={(e) => handleInputChange('nomorUsaha', e.target.value, 'pihak2')}
-                    />
+
+                  <div className="grid md:grid-cols-2 gap-6">
+                    <div>
+                      <Label htmlFor="nomorTelp2">Nomor Telepon</Label>
+                      <Input
+                        id="nomorTelp2"
+                        value={contractData.pihak2.nomorTelp}
+                        onChange={(e) =>
+                          handleInputChange(
+                            "nomorTelp",
+                            e.target.value,
+                            "pihak2"
+                          )
+                        }
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="email2">Email</Label>
+                      <Input
+                        id="email2"
+                        type="email"
+                        value={contractData.pihak2.email}
+                        onChange={(e) =>
+                          handleInputChange("email", e.target.value, "pihak2")
+                        }
+                      />
+                    </div>
                   </div>
-                </div>
-              </TabsContent>
-            </Tabs>
+
+                  <div className="grid md:grid-cols-2 gap-6">
+                    <div>
+                      <Label htmlFor="npwp2">NPWP</Label>
+                      <Input
+                        id="npwp2"
+                        value={contractData.pihak2.npwp}
+                        onChange={(e) =>
+                          handleInputChange("npwp", e.target.value, "pihak2")
+                        }
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="nomorUsaha2">Nomor Usaha</Label>
+                      <Input
+                        id="nomorUsaha2"
+                        value={contractData.pihak2.nomorUsaha}
+                        onChange={(e) =>
+                          handleInputChange(
+                            "nomorUsaha",
+                            e.target.value,
+                            "pihak2"
+                          )
+                        }
+                      />
+                    </div>
+                  </div>
+                </TabsContent>
+              </Tabs>
             </div>
           )}
 
@@ -1076,52 +1164,70 @@ export default function DraftPage({ initialInputMethod, initialFile, initialExtr
               <div className="grid md:grid-cols-2 gap-6">
                 <div>
                   <Label htmlFor="jenisLayanan">Jenis Layanan</Label>
-                  <Input 
+                  <Input
                     id="jenisLayanan"
                     value={contractData.jenisLayanan}
-                    onChange={(e) => handleInputChange('jenisLayanan', e.target.value)}
+                    onChange={(e) =>
+                      handleInputChange("jenisLayanan", e.target.value)
+                    }
                     placeholder="Contoh: Jasa Konsultasi IT"
                   />
                 </div>
                 <div>
-                  <Label htmlFor="wilayahOperasional">Wilayah Operasional</Label>
-                  <Input 
+                  <Label htmlFor="wilayahOperasional">
+                    Wilayah Operasional
+                  </Label>
+                  <Input
                     id="wilayahOperasional"
                     value={contractData.wilayahOperasional}
-                    onChange={(e) => handleInputChange('wilayahOperasional', e.target.value)}
+                    onChange={(e) =>
+                      handleInputChange("wilayahOperasional", e.target.value)
+                    }
                     placeholder="Contoh: Jakarta, Indonesia"
                   />
                 </div>
               </div>
 
               <div>
-                <Label htmlFor="deskripsiLayanan">Deskripsi Layanan (Jenis Barang/Layanan)</Label>
-                <Textarea 
+                <Label htmlFor="deskripsiLayanan">
+                  Deskripsi Layanan (Jenis Barang/Layanan)
+                </Label>
+                <Textarea
                   id="deskripsiLayanan"
                   value={contractData.deskripsiLayanan}
-                  onChange={(e) => handleInputChange('deskripsiLayanan', e.target.value)}
+                  onChange={(e) =>
+                    handleInputChange("deskripsiLayanan", e.target.value)
+                  }
                   rows={4}
                   placeholder="Jelaskan secara detail layanan atau barang yang akan disediakan..."
                 />
               </div>
 
               <div>
-                <Label htmlFor="hakKewajibanPihak1">Hak dan Kewajiban Pihak Pertama</Label>
-                <Textarea 
+                <Label htmlFor="hakKewajibanPihak1">
+                  Hak dan Kewajiban Pihak Pertama
+                </Label>
+                <Textarea
                   id="hakKewajibanPihak1"
                   value={contractData.hakKewajibanPihak1}
-                  onChange={(e) => handleInputChange('hakKewajibanPihak1', e.target.value)}
+                  onChange={(e) =>
+                    handleInputChange("hakKewajibanPihak1", e.target.value)
+                  }
                   rows={4}
                   placeholder="Sebutkan hak dan kewajiban pihak pertama..."
                 />
               </div>
 
               <div>
-                <Label htmlFor="hakKewajibanPihak2">Hak dan Kewajiban Pihak Kedua</Label>
-                <Textarea 
+                <Label htmlFor="hakKewajibanPihak2">
+                  Hak dan Kewajiban Pihak Kedua
+                </Label>
+                <Textarea
                   id="hakKewajibanPihak2"
                   value={contractData.hakKewajibanPihak2}
-                  onChange={(e) => handleInputChange('hakKewajibanPihak2', e.target.value)}
+                  onChange={(e) =>
+                    handleInputChange("hakKewajibanPihak2", e.target.value)
+                  }
                   rows={4}
                   placeholder="Sebutkan hak dan kewajiban pihak kedua..."
                 />
@@ -1129,10 +1235,12 @@ export default function DraftPage({ initialInputMethod, initialFile, initialExtr
 
               <div>
                 <Label htmlFor="syaratLayanan">Syarat Layanan</Label>
-                <Textarea 
+                <Textarea
                   id="syaratLayanan"
                   value={contractData.syaratLayanan}
-                  onChange={(e) => handleInputChange('syaratLayanan', e.target.value)}
+                  onChange={(e) =>
+                    handleInputChange("syaratLayanan", e.target.value)
+                  }
                   rows={3}
                   placeholder="Sebutkan syarat-syarat khusus layanan..."
                 />
@@ -1146,19 +1254,25 @@ export default function DraftPage({ initialInputMethod, initialFile, initialExtr
               <div className="grid md:grid-cols-2 gap-6">
                 <div>
                   <Label htmlFor="nominal">Nominal Kontrak</Label>
-                  <Input 
+                  <Input
                     id="nominal"
                     value={contractData.nominal}
-                    onChange={(e) => handleInputChange('nominal', e.target.value)}
+                    onChange={(e) =>
+                      handleInputChange("nominal", e.target.value)
+                    }
                     placeholder="Contoh: Rp 100.000.000"
                   />
                 </div>
                 <div>
-                  <Label htmlFor="jangkaWaktuPembayaran">Jangka Waktu Pembayaran</Label>
-                  <Input 
+                  <Label htmlFor="jangkaWaktuPembayaran">
+                    Jangka Waktu Pembayaran
+                  </Label>
+                  <Input
                     id="jangkaWaktuPembayaran"
                     value={contractData.jangkaWaktuPembayaran}
-                    onChange={(e) => handleInputChange('jangkaWaktuPembayaran', e.target.value)}
+                    onChange={(e) =>
+                      handleInputChange("jangkaWaktuPembayaran", e.target.value)
+                    }
                     placeholder="Contoh: 30 hari"
                   />
                 </div>
@@ -1166,10 +1280,12 @@ export default function DraftPage({ initialInputMethod, initialFile, initialExtr
 
               <div>
                 <Label htmlFor="syaratPembayaran">Syarat Pembayaran</Label>
-                <Textarea 
+                <Textarea
                   id="syaratPembayaran"
                   value={contractData.syaratPembayaran}
-                  onChange={(e) => handleInputChange('syaratPembayaran', e.target.value)}
+                  onChange={(e) =>
+                    handleInputChange("syaratPembayaran", e.target.value)
+                  }
                   rows={3}
                   placeholder="Jelaskan syarat pembayaran (pelunasan, invoice rilis kapan, pajak, dll)..."
                 />
@@ -1180,28 +1296,46 @@ export default function DraftPage({ initialInputMethod, initialFile, initialExtr
                 <div className="grid md:grid-cols-3 gap-4">
                   <div>
                     <Label htmlFor="bank">Bank</Label>
-                    <Input 
+                    <Input
                       id="bank"
                       value={contractData.caraPembayaran.bank}
-                      onChange={(e) => handleInputChange('bank', e.target.value, 'caraPembayaran')}
+                      onChange={(e) =>
+                        handleInputChange(
+                          "bank",
+                          e.target.value,
+                          "caraPembayaran"
+                        )
+                      }
                       placeholder="Contoh: BCA"
                     />
                   </div>
                   <div>
                     <Label htmlFor="namaRekening">Nama Rekening</Label>
-                    <Input 
+                    <Input
                       id="namaRekening"
                       value={contractData.caraPembayaran.nama}
-                      onChange={(e) => handleInputChange('nama', e.target.value, 'caraPembayaran')}
+                      onChange={(e) =>
+                        handleInputChange(
+                          "nama",
+                          e.target.value,
+                          "caraPembayaran"
+                        )
+                      }
                       placeholder="Nama pemilik rekening"
                     />
                   </div>
                   <div>
                     <Label htmlFor="norek">Nomor Rekening</Label>
-                    <Input 
+                    <Input
                       id="norek"
                       value={contractData.caraPembayaran.norek}
-                      onChange={(e) => handleInputChange('norek', e.target.value, 'caraPembayaran')}
+                      onChange={(e) =>
+                        handleInputChange(
+                          "norek",
+                          e.target.value,
+                          "caraPembayaran"
+                        )
+                      }
                       placeholder="Nomor rekening"
                     />
                   </div>
@@ -1210,10 +1344,12 @@ export default function DraftPage({ initialInputMethod, initialFile, initialExtr
 
               <div>
                 <Label htmlFor="dendaKeterlambatan">Denda Keterlambatan</Label>
-                <Textarea 
+                <Textarea
                   id="dendaKeterlambatan"
                   value={contractData.dendaKeterlambatan}
-                  onChange={(e) => handleInputChange('dendaKeterlambatan', e.target.value)}
+                  onChange={(e) =>
+                    handleInputChange("dendaKeterlambatan", e.target.value)
+                  }
                   rows={3}
                   placeholder="Jelaskan aturan denda keterlambatan pembayaran..."
                 />
@@ -1227,30 +1363,40 @@ export default function DraftPage({ initialInputMethod, initialFile, initialExtr
               <div className="grid md:grid-cols-2 gap-6">
                 <div>
                   <Label htmlFor="batasWaktuKlaim">Batas Waktu Klaim</Label>
-                  <Input 
+                  <Input
                     id="batasWaktuKlaim"
                     value={contractData.batasWaktuKlaim}
-                    onChange={(e) => handleInputChange('batasWaktuKlaim', e.target.value)}
+                    onChange={(e) =>
+                      handleInputChange("batasWaktuKlaim", e.target.value)
+                    }
                     placeholder="Contoh: 14 hari"
                   />
                 </div>
                 <div>
-                  <Label htmlFor="maksimalKompensasi">Maksimal Kompensasi</Label>
-                  <Input 
+                  <Label htmlFor="maksimalKompensasi">
+                    Maksimal Kompensasi
+                  </Label>
+                  <Input
                     id="maksimalKompensasi"
                     value={contractData.maksimalKompensasi}
-                    onChange={(e) => handleInputChange('maksimalKompensasi', e.target.value)}
+                    onChange={(e) =>
+                      handleInputChange("maksimalKompensasi", e.target.value)
+                    }
                     placeholder="Contoh: 50% dari nilai kontrak"
                   />
                 </div>
               </div>
 
               <div>
-                <Label htmlFor="penyelesaianSengketa">Penyelesaian Sengketa</Label>
-                <Textarea 
+                <Label htmlFor="penyelesaianSengketa">
+                  Penyelesaian Sengketa
+                </Label>
+                <Textarea
                   id="penyelesaianSengketa"
                   value={contractData.penyelesaianSengketa}
-                  onChange={(e) => handleInputChange('penyelesaianSengketa', e.target.value)}
+                  onChange={(e) =>
+                    handleInputChange("penyelesaianSengketa", e.target.value)
+                  }
                   rows={4}
                   placeholder="Jelaskan mekanisme penyelesaian sengketa (mediasi, arbitrase, pengadilan, dll)..."
                 />
@@ -1258,10 +1404,12 @@ export default function DraftPage({ initialInputMethod, initialFile, initialExtr
 
               <div>
                 <Label htmlFor="forceMajeure">Force Majeure</Label>
-                <Textarea 
+                <Textarea
                   id="forceMajeure"
                   value={contractData.forceMajeure}
-                  onChange={(e) => handleInputChange('forceMajeure', e.target.value)}
+                  onChange={(e) =>
+                    handleInputChange("forceMajeure", e.target.value)
+                  }
                   rows={4}
                   placeholder="Jelaskan ketentuan force majeure (bencana alam, pandemi, perang, dll)..."
                 />
@@ -1285,30 +1433,37 @@ export default function DraftPage({ initialInputMethod, initialFile, initialExtr
 
           {/* Navigation Buttons */}
           <div className="flex justify-between mt-8 pt-6 border-t">
-            <Button 
-              variant="outline" 
+            <Button
+              variant="outline"
               onClick={prevStep}
               disabled={currentStep === 0}
             >
               Sebelumnya
             </Button>
-            
+
             <div className="flex gap-2">
               {currentStep === steps.length - 1 ? (
-                <Button onClick={handleGenerateContract} disabled={isGenerating}>
+                <Button
+                  onClick={handleGenerateContract}
+                  disabled={isGenerating}
+                >
                   {isGenerating ? (
                     <span className="flex items-center">
                       <span className="animate-spin mr-2">⏳</span>
                       Generating...
                     </span>
                   ) : (
-                    'Simpan ke Database'
+                    "Simpan ke Database"
                   )}
                 </Button>
               ) : (
-                <Button 
+                <Button
                   onClick={nextStep}
-                  disabled={currentStep === 0 && (!inputMethod || (inputMethod === 'upload' && !uploadedFile))}
+                  disabled={
+                    currentStep === 0 &&
+                    (!inputMethod ||
+                      (inputMethod === "upload" && !uploadedFile))
+                  }
                 >
                   Selanjutnya
                 </Button>
@@ -1318,5 +1473,5 @@ export default function DraftPage({ initialInputMethod, initialFile, initialExtr
         </CardContent>
       </Card>
     </div>
-  )
+  );
 }

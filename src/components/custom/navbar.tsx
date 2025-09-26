@@ -98,12 +98,7 @@ export function Navbar() {
       case "ADMIN":
         return [allNavLinks.dashboard, allNavLinks.register];
       case "HR":
-        return [
-          allNavLinks.dashboard,
-          allNavLinks.create,
-          allNavLinks.employment,
-          allNavLinks.draft,
-        ];
+        return [allNavLinks.dashboard, allNavLinks.create];
       case "LEGAL":
         return [
           allNavLinks.dashboard,
