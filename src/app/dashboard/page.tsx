@@ -98,11 +98,6 @@ export default function DashboardPage() {
     <div className="flex min-h-screen w-full flex-col bg-gray-100/40 dark:bg-gray-800/40">
       {/* 1. Header Utama */}
       <header className="flex h-14 items-center gap-4 border-b bg-white px-6 dark:bg-gray-950">
-        <div className="flex items-center gap-2 font-semibold">
-          <span className="text-lg bg-orange-500 text-white px-2 py-1 rounded">
-            CW
-          </span>
-        </div>
         <div className="flex-1">
           <div className="relative w-full max-w-md">
             <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-gray-500" />
@@ -113,15 +108,6 @@ export default function DashboardPage() {
             />
           </div>
         </div>
-        <nav className="flex items-center gap-4 text-sm font-medium">
-          <Settings className="h-5 w-5" />
-          <Clock className="h-5 w-5" />
-          <Avatar className="h-8 w-8">
-            <AvatarImage src="https://github.com/shadcn.png" alt="@shadcn" />
-            <AvatarFallback>CN</AvatarFallback>
-          </Avatar>
-          <HelpCircle className="h-5 w-5" />
-        </nav>
       </header>
 
       {/* Konten Utama */}
@@ -129,25 +115,6 @@ export default function DashboardPage() {
         {/* Header Konten */}
         <div className="flex items-center justify-between mb-4">
           <h1 className="text-2xl font-bold">Contracts</h1>
-          <div className="flex items-center gap-2">
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button variant="outline" size="sm">
-                  View <ChevronDown className="ml-2 h-4 w-4" />
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent>
-                <DropdownMenuItem>List</DropdownMenuItem>
-                <DropdownMenuItem>Grid</DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
-            <Button variant="outline" size="icon" className="bg-gray-200">
-              <List className="h-4 w-4" />
-            </Button>
-            <Button variant="outline" size="icon">
-              <Grip className="h-4 w-4" />
-            </Button>
-          </div>
         </div>
 
         {/* Filter Section */}
@@ -161,12 +128,20 @@ export default function DashboardPage() {
             </DropdownMenuTrigger>
             <DropdownMenuContent>
               <DropdownMenuItem onSelect={(e) => e.preventDefault()}>
-                <Checkbox id="status-active" className="mr-2" />
-                <Label htmlFor="status-active">Active</Label>
+                <Checkbox id="status-draft" className="mr-2" />
+                <Label htmlFor="status-draft">draft</Label>
               </DropdownMenuItem>
               <DropdownMenuItem onSelect={(e) => e.preventDefault()}>
-                <Checkbox id="status-archived" className="mr-2" />
-                <Label htmlFor="status-archived">Archived</Label>
+                <Checkbox id="status-aktif" className="mr-2" />
+                <Label htmlFor="status-aktif">Aktif</Label>
+              </DropdownMenuItem>
+              <DropdownMenuItem onSelect={(e) => e.preventDefault()}>
+                <Checkbox id="status-aktif" className="mr-2" />
+                <Label htmlFor="status-aktif">Aktif</Label>
+              </DropdownMenuItem>
+              <DropdownMenuItem onSelect={(e) => e.preventDefault()}>
+                <Checkbox id="status-aktif" className="mr-2" />
+                <Label htmlFor="status-aktif">Aktif</Label>
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
@@ -180,34 +155,13 @@ export default function DashboardPage() {
             </DropdownMenuTrigger>
             <DropdownMenuContent>
               <DropdownMenuItem onSelect={(e) => e.preventDefault()}>
-                <Checkbox id="type-services" className="mr-2" />
-                <Label htmlFor="type-services">Services</Label>
+                <Checkbox id="type-employment" className="mr-2" />
+                <Label htmlFor="type-employment">Employment</Label>
               </DropdownMenuItem>
               <DropdownMenuItem onSelect={(e) => e.preventDefault()}>
-                <Checkbox id="type-legal" className="mr-2" />
-                <Label htmlFor="type-legal">Legal</Label>
+                <Checkbox id="type-partnership" className="mr-2" />
+                <Label htmlFor="type-partnership">Partnership</Label>
               </DropdownMenuItem>
-              <DropdownMenuItem onSelect={(e) => e.preventDefault()}>
-                <Checkbox id="type-hr" className="mr-2" />
-                <Label htmlFor="type-hr">HR</Label>
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
-
-          {/* Filter Tanggal */}
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="outline">
-                Date <ChevronDown className="ml-2 h-4 w-4" />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent className="p-2">
-              <div className="grid gap-2">
-                <Label htmlFor="start-date">Start Date</Label>
-                <Input id="start-date" type="date" />
-                <Label htmlFor="end-date">End Date</Label>
-                <Input id="end-date" type="date" />
-              </div>
             </DropdownMenuContent>
           </DropdownMenu>
 
