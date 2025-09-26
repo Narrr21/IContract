@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useState } from 'react'
+import React, { useState, useRef } from 'react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -10,7 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Calendar } from '@/components/ui/calendar'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
-import { CalendarIcon, Upload, FileText, Users } from 'lucide-react'
+import { CalendarIcon, Upload, FileText, Users, CheckCircle } from 'lucide-react'
 import { format } from 'date-fns'
 
 interface ContractData {
@@ -72,6 +72,10 @@ interface ContractData {
 export default function DraftPage() {
   const [currentStep, setCurrentStep] = useState(0)
   const [inputMethod, setInputMethod] = useState<'manual' | 'upload' | null>(null)
+  const [uploadedFile, setUploadedFile] = useState<File | null>(null)
+  const [isScanning, setIsScanning] = useState(false)
+  const [scanProgress, setScanProgress] = useState(0)
+  const fileInputRef = useRef<HTMLInputElement>(null)
   const [contractData, setContractData] = useState<ContractData>({
     nomorKontrak: '',
     judul: '',
@@ -140,6 +144,92 @@ export default function DraftPage() {
         ...prev,
         [field]: value
       }))
+    }
+  }
+
+  const isFieldDisabled = () => {
+    return inputMethod === 'upload' && uploadedFile !== null
+  }
+
+  const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0]
+    if (!file) return
+
+    await processFile(file)
+  }
+
+  const processFile = async (file: File) => {
+    if (file.type !== 'application/pdf') {
+      alert('Hanya file PDF yang diperbolehkan!')
+      return
+    }
+
+    // Check file size (10MB limit)
+    if (file.size > 10 * 1024 * 1024) {
+      alert('Ukuran file terlalu besar! Maksimal 10MB.')
+      return
+    }
+
+    setUploadedFile(file)
+    setIsScanning(true)
+    setScanProgress(0)
+
+    try {
+      // Simulate PDF scanning progress
+      const progressInterval = setInterval(() => {
+        setScanProgress(prev => {
+          if (prev >= 90) {
+            clearInterval(progressInterval)
+            return 90
+          }
+          return prev + 10
+        })
+      }, 300)
+
+      // Extract text from PDF
+      const extractedData = await extractPDFData(file)
+      
+      // Map extracted data to form fields
+      if (extractedData) {
+        setContractData(extractedData)
+      }
+
+      setScanProgress(100)
+      setTimeout(() => {
+        setIsScanning(false)
+        // Auto advance to next step after successful scan
+        setCurrentStep(1)
+      }, 500)
+
+    } catch (error) {
+      console.error('Error processing PDF:', error)
+      alert('Gagal memproses PDF. Silakan coba lagi.')
+      setIsScanning(false)
+      setScanProgress(0)
+      setUploadedFile(null)
+    }
+  }
+
+  const extractPDFData = async (file: File): Promise<ContractData> => {
+    const formData = new FormData()
+    formData.append('file', file)
+
+    const response = await fetch('/api/process-pdf', {
+      method: 'POST',
+      body: formData,
+    })
+
+    if (!response.ok) {
+      throw new Error('Failed to process PDF')
+    }
+
+    const result = await response.json()
+    
+    // Convert the API response to ContractData format
+    const data = result.data
+    return {
+      ...data,
+      tanggalMulai: data.tanggalMulai ? new Date(data.tanggalMulai) : undefined
     }
   }
 
@@ -242,10 +332,116 @@ export default function DraftPage() {
               </div>
 
               {inputMethod === 'upload' && (
-                <div className="mt-6 p-4 border-2 border-dashed border-gray-300 rounded-lg text-center">
-                  <Upload className="w-8 h-8 mx-auto mb-2 text-gray-400" />
-                  <p className="text-gray-600 mb-2">Drag & drop file atau klik untuk browse</p>
-                  <Button variant="outline">Pilih File</Button>
+                <div className="mt-6">
+                  {!uploadedFile && !isScanning && (
+                    <div 
+                      className="p-6 border-2 border-dashed border-gray-300 rounded-lg text-center hover:border-blue-400 transition-colors cursor-pointer"
+                      onClick={() => fileInputRef.current?.click()}
+                      onDragOver={(e) => {
+                        e.preventDefault()
+                        e.currentTarget.classList.add('border-blue-400', 'bg-blue-50')
+                      }}
+                      onDragLeave={(e) => {
+                        e.preventDefault()
+                        e.currentTarget.classList.remove('border-blue-400', 'bg-blue-50')
+                      }}
+                      onDrop={async (e) => {
+                        e.preventDefault()
+                        e.currentTarget.classList.remove('border-blue-400', 'bg-blue-50')
+                        const files = Array.from(e.dataTransfer.files)
+                        if (files.length > 0) {
+                          await processFile(files[0])
+                        }
+                      }}
+                    >
+                      <Upload className="w-12 h-12 mx-auto mb-4 text-gray-400" />
+                      <p className="text-gray-600 mb-2">Upload file PDF kontrak untuk analisis otomatis</p>
+                      <p className="text-sm text-gray-500 mb-4">
+                        Drag & drop file PDF atau klik untuk browse
+                        <br />
+                        <span className="text-xs text-gray-400">Format: PDF • Ukuran maksimal: 10MB</span>
+                      </p>
+                      
+                      <Button variant="outline" type="button">
+                        <Upload className="w-4 h-4 mr-2" />
+                        Pilih File PDF
+                      </Button>
+                      
+                      <input
+                        ref={fileInputRef}
+                        type="file"
+                        accept=".pdf,application/pdf"
+                        onChange={handleFileUpload}
+                        className="hidden"
+                      />
+                    </div>
+                  )}
+
+                  {isScanning && (
+                    <div className="p-6 border-2 border-blue-200 bg-blue-50 rounded-lg">
+                      <div className="text-center mb-4">
+                        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+                        <h3 className="font-semibold text-lg text-blue-900">Memproses Dokumen PDF</h3>
+                        <p className="text-blue-700 mb-4">Menganalisis dan mengekstrak informasi kontrak...</p>
+                      </div>
+                      
+                      <div className="w-full bg-blue-200 rounded-full h-3 mb-2">
+                        <div 
+                          className="bg-blue-600 h-3 rounded-full transition-all duration-300 ease-out"
+                          style={{ width: `${scanProgress}%` }}
+                        ></div>
+                      </div>
+                      <p className="text-center text-sm text-blue-600">{scanProgress}% selesai</p>
+                    </div>
+                  )}
+
+                  {uploadedFile && !isScanning && (
+                    <div className="p-4 border-2 border-green-200 bg-green-50 rounded-lg">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center">
+                          <FileText className="w-8 h-8 text-green-600 mr-3" />
+                          <div>
+                            <p className="font-semibold text-green-900">{uploadedFile.name}</p>
+                            <p className="text-sm text-green-700">
+                              Dokumen berhasil diproses dan data telah dipetakan ke form
+                            </p>
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <Button 
+                            variant="outline" 
+                            size="sm"
+                            onClick={() => {
+                              setUploadedFile(null)
+                              setInputMethod(null)
+                              // Reset contract data to empty state
+                              setContractData({
+                                nomorKontrak: '',
+                                judul: '',
+                                jenis: 'PARTNERSHIP',
+                                tanggalMulai: undefined,
+                                durasi: '',
+                                pihak1: {
+                                  namaPerusahaan: '', namaDirektur: '', alamat: '', nomorTelp: '', email: '', npwp: '', nomorUsaha: ''
+                                },
+                                pihak2: {
+                                  namaPerusahaan: '', namaDirektur: '', alamat: '', nomorTelp: '', email: '', npwp: '', nomorUsaha: ''
+                                },
+                                jenisLayanan: '', deskripsiLayanan: '', wilayahOperasional: '', hakKewajibanPihak1: '', hakKewajibanPihak2: '', syaratLayanan: '',
+                                nominal: '', syaratPembayaran: '', caraPembayaran: { bank: '', nama: '', norek: '' }, jangkaWaktuPembayaran: '', dendaKeterlambatan: '',
+                                batasWaktuKlaim: '', maksimalKompensasi: '', penyelesaianSengketa: '', forceMajeure: ''
+                              })
+                            }}
+                          >
+                            Hapus & Mulai Ulang
+                          </Button>
+                          <div className="text-green-600">
+                            <CheckCircle className="w-6 h-6" />
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  )}
                 </div>
               )}
             </div>
@@ -254,6 +450,19 @@ export default function DraftPage() {
           {/* Step 1: Informasi Umum */}
           {currentStep === 1 && (
             <div className="space-y-6">
+              {isFieldDisabled() && (
+                <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg">
+                  <div className="flex items-center">
+                    <FileText className="w-5 h-5 text-blue-600 mr-2" />
+                    <p className="text-blue-800 font-medium">
+                      Data telah diisi otomatis dari dokumen PDF yang di-upload
+                    </p>
+                  </div>
+                  <p className="text-blue-600 text-sm mt-1">
+                    Anda dapat meninjau data di bawah ini. Field tidak dapat diedit karena data berasal dari scan dokumen.
+                  </p>
+                </div>
+              )}
               <div className="grid md:grid-cols-2 gap-6">
                 <div>
                   <Label htmlFor="nomorKontrak">Nomor Kontrak</Label>
@@ -262,11 +471,12 @@ export default function DraftPage() {
                     value={contractData.nomorKontrak}
                     onChange={(e) => handleInputChange('nomorKontrak', e.target.value)}
                     placeholder="Masukkan nomor kontrak"
+                    disabled={isFieldDisabled()}
                   />
                 </div>
                 <div>
                   <Label htmlFor="jenis">Jenis Kontrak</Label>
-                  <Select value={contractData.jenis} onValueChange={(value) => handleInputChange('jenis', value)}>
+                  <Select value={contractData.jenis} onValueChange={(value) => handleInputChange('jenis', value)} disabled={isFieldDisabled()}>
                     <SelectTrigger>
                       <SelectValue />
                     </SelectTrigger>
@@ -286,6 +496,7 @@ export default function DraftPage() {
                   value={contractData.judul}
                   onChange={(e) => handleInputChange('judul', e.target.value)}
                   placeholder="Masukkan judul kontrak"
+                  disabled={isFieldDisabled()}
                 />
               </div>
 
@@ -294,7 +505,7 @@ export default function DraftPage() {
                   <Label>Tanggal Mulai</Label>
                   <Popover>
                     <PopoverTrigger asChild>
-                      <Button variant="outline" className="w-full justify-start text-left font-normal">
+                      <Button variant="outline" className="w-full justify-start text-left font-normal" disabled={isFieldDisabled()}>
                         <CalendarIcon className="mr-2 h-4 w-4" />
                         {contractData.tanggalMulai ? format(contractData.tanggalMulai, "dd/MM/yyyy") : "Pilih tanggal"}
                       </Button>
@@ -315,6 +526,7 @@ export default function DraftPage() {
                     value={contractData.durasi}
                     onChange={(e) => handleInputChange('durasi', e.target.value)}
                     placeholder="Contoh: 12 bulan"
+                    disabled={isFieldDisabled()}
                   />
                 </div>
               </div>
@@ -323,7 +535,18 @@ export default function DraftPage() {
 
           {/* Step 2: Identitas Para Pihak */}
           {currentStep === 2 && (
-            <Tabs defaultValue="pihak1" className="w-full">
+            <div className="space-y-6">
+              {isFieldDisabled() && (
+                <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg">
+                  <div className="flex items-center">
+                    <FileText className="w-5 h-5 text-blue-600 mr-2" />
+                    <p className="text-blue-800 font-medium">
+                      Data identitas para pihak telah diisi otomatis dari dokumen PDF
+                    </p>
+                  </div>
+                </div>
+              )}
+              <Tabs defaultValue="pihak1" className="w-full">
               <TabsList className="grid w-full grid-cols-2">
                 <TabsTrigger value="pihak1">Pihak Pertama</TabsTrigger>
                 <TabsTrigger value="pihak2">Pihak Kedua</TabsTrigger>
@@ -337,6 +560,7 @@ export default function DraftPage() {
                       id="namaPerusahaan1"
                       value={contractData.pihak1.namaPerusahaan}
                       onChange={(e) => handleInputChange('namaPerusahaan', e.target.value, 'pihak1')}
+                      disabled={isFieldDisabled()}
                     />
                   </div>
                   <div>
@@ -469,6 +693,7 @@ export default function DraftPage() {
                 </div>
               </TabsContent>
             </Tabs>
+            </div>
           )}
 
           {/* Step 3: Ruang Lingkup */}
@@ -688,7 +913,7 @@ export default function DraftPage() {
               ) : (
                 <Button 
                   onClick={nextStep}
-                  disabled={currentStep === 0 && !inputMethod}
+                  disabled={currentStep === 0 && (!inputMethod || (inputMethod === 'upload' && !uploadedFile))}
                 >
                   Selanjutnya
                 </Button>
