@@ -4,13 +4,6 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 
@@ -27,6 +20,7 @@ export default function LoginPage() {
     setError(null);
 
     try {
+      // Logika fetch API Anda tetap sama
       const response = await fetch('/api/account/login', {
         method: 'POST',
         headers: {
@@ -43,12 +37,8 @@ export default function LoginPage() {
       }
 
       if (data.success) {
-        // Store user data in localStorage (you might want to use a state management solution)
-        // localStorage.setItem('user', JSON.stringify(data.user));
-        
         console.log("Login successful!", data.user);
         router.push("/");
-        window.location.href = "/";
       }
 
     } catch (err) {
@@ -60,15 +50,30 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="flex items-center justify-center min-h-screen bg-gray-100 dark:bg-gray-950">
-      <Card className="mx-auto w-[50%]">
-        <CardHeader>
-          <CardTitle className="text-2xl">Login</CardTitle>
-          <CardDescription>
-            Enter your email below to login to your account
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
+    <div className="flex flex-col min-h-screen bg-white text-gray-800">
+
+      {/* 2. Bagian Konten Utama */}
+      <main className="flex-grow container mx-auto grid md:grid-cols-2 gap-16 items-center p-8">
+        
+        {/* Kolom Kiri: Gambar Ilustrasi */}
+        <div className="hidden md:block">
+           {/* Ganti src dengan path gambar ilustrasi Anda di folder /public */}
+          <img 
+            src="/images/register-bg.jpg" 
+            alt="Contract Illustration" 
+            className="object-cover"
+          />
+        </div>
+
+        {/* Kolom Kanan: Form Login */}
+        <div className="flex flex-col justify-center">
+          <div className="mb-6">
+            <h1 className="text-4xl font-bold mb-2">Masuk</h1>
+            <p className="text-gray-500">
+              Kelola, awasi, dan amankan semua kontrak Anda di satu platform.
+            </p>
+          </div>
+
           <form onSubmit={handleSubmit}>
             <div className="grid gap-4">
               <div className="grid gap-2">
@@ -76,31 +81,25 @@ export default function LoginPage() {
                 <Input
                   id="email"
                   type="email"
-                  placeholder="test@example.com"
+                  placeholder="Email"
                   required
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   disabled={isLoading}
+                  className="bg-white"
                 />
               </div>
               <div className="grid gap-2">
-                <div className="flex items-center">
-                  <Label htmlFor="password">Password</Label>
-                  <a
-                    href="#"
-                    className="ml-auto inline-block text-sm underline"
-                  >
-                    Forgot your password?
-                  </a>
-                </div>
+                 <Label htmlFor="password">Password</Label>
                 <Input
                   id="password"
                   type="password"
-                  placeholder="password123"
+                  placeholder="Password"
                   required
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   disabled={isLoading}
+                  className="bg-white"
                 />
               </div>
 
@@ -110,22 +109,13 @@ export default function LoginPage() {
                 </div>
               )}
 
-              <Button type="submit" className="w-full" disabled={isLoading}>
+              <Button type="submit" className="w-full bg-blue-600 hover:bg-blue-700" disabled={isLoading}>
                 {isLoading ? "Signing in..." : "Login"}
               </Button>
             </div>
           </form>
-          
-          {/* Development helper */}
-          <div className="mt-4 p-3 bg-blue-50 rounded-md border border-blue-200">
-            <p className="text-sm text-blue-700">
-              <strong>Test credentials:</strong><br />
-              Email: test@example.com<br />
-              Password: password123
-            </p>
-          </div>
-        </CardContent>
-      </Card>
+        </div>
+      </main>
     </div>
   );
 }

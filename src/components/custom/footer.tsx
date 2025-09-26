@@ -3,7 +3,7 @@ import Image from "next/image";
 
 export function Footer() {
   return (
-    <div className="bg-white border-t border-gray-200 px-8 py-6">
+    <div className="bg-[#E4EDFF] border-t border-gray-200 px-8 py-6">
       <div className="max-w-7xl mx-auto">
         <div className="flex items-center gap-2 mb-4">
           {/* Logo IContract */}
