@@ -1,5 +1,3 @@
-// review/page.tsx
-
 "use client";
 
 import { useState, useEffect } from "react";
@@ -31,6 +29,7 @@ const ContractViewerOverlay = dynamic(
   }
 );
 
+// Tipe data untuk setiap temuan
 type Finding = {
   id: string;
   page: number;
@@ -39,47 +38,52 @@ type Finding = {
   category: "Critical" | "Suggestion" | "Positive";
 };
 
-const reviewFindings: Finding[] = [
-  {
-    id: "finding-1",
-    page: 5,
-    text: "Jika kepada PENGIRIM, maka bentuk pengirimannya adalah :",
-    comment:
-      "The effective date is ambiguous. It should be a specific, defined date to avoid confusion.",
-    category: "Critical",
-  },
-  {
-    id: "finding-2",
-    page: 2,
-    text: "The term of this Agreement will be for a period of 12 months",
-    comment:
-      "Consider adding an auto-renewal clause with a 30-day notice period for termination.",
-    category: "Suggestion",
-  },
-  {
-    id: "finding-3",
-    page: 3,
-    text: "confidential information",
-    comment:
-      'The definition of "confidential information" is well-defined and comprehensive. Good.',
-    category: "Positive",
-  },
-];
+// MODIFIKASI: Struktur data diubah menjadi objek yang dikelompokkan
+const groupedFindings: { [key: string]: Finding[] } = {
+  "Kesalahan": [
+    {
+      id: "finding-1",
+      page: 5,
+      text: "Jika kepada PENGIRIM, maka bentuk pengirimannya adalah :",
+      comment:
+        "Tanggal efektif tidak jelas. Seharusnya tanggal yang spesifik dan terdefinisi untuk menghindari kebingungan.",
+      category: "Critical",
+    },
+    {
+      id: "finding-2",
+      page: 2,
+      text: "The term of this Agreement will be for a period of 12 months",
+      comment:
+        "Pertimbangkan untuk menambahkan klausul perpanjangan otomatis dengan periode pemberitahuan 30 hari untuk penghentian.",
+      category: "Suggestion",
+    },
+  ],
+  "Hukum": [
+    {
+      id: "finding-3",
+      page: 3,
+      text: "confidential information",
+      comment:
+        'Definisi "informasi rahasia" sudah jelas dan komprehensif. Bagus.',
+      category: "Positive",
+    },
+  ],
+};
 
-// In review/page.tsx (CORRECTED)
+// Palet warna untuk setiap kategori temuan (tidak berubah)
 const categoryColors = {
   Critical: {
-    bg: "bg-red-100 dark:bg-red-900/30", // Added this
+    bg: "bg-red-100 dark:bg-red-900/30",
     border: "border-red-500",
     badge: "bg-red-500",
   },
   Suggestion: {
-    bg: "bg-yellow-100 dark:bg-yellow-800/30", // Added this
+    bg: "bg-yellow-100 dark:bg-yellow-800/30",
     border: "border-yellow-500",
     badge: "bg-yellow-500",
   },
   Positive: {
-    bg: "bg-green-100 dark:bg-green-900/30", // Added this
+    bg: "bg-green-100 dark:bg-green-900/30",
     border: "border-green-500",
     badge: "bg-green-500",
   },
@@ -92,6 +96,9 @@ export default function ContractReviewerPage() {
   const [textWithCoords, setTextWithCoords] = useState([]);
   const [isLoadingText, setIsLoadingText] = useState(true);
   const pdfFile = "sample-kontrak.pdf";
+
+  // BARU: Buat array datar dari semua temuan untuk diteruskan ke viewer
+  const allFindings = Object.values(groupedFindings).flat();
 
   useEffect(() => {
     const fetchTextData = async () => {
@@ -109,7 +116,7 @@ export default function ContractReviewerPage() {
         setTextWithCoords(data.textData || []);
       } catch (error) {
         console.error("Failed to fetch text coordinates", error);
-        setTextWithCoords([]); // Set to empty array on error
+        setTextWithCoords([]);
       } finally {
         setIsLoadingText(false);
       }
@@ -149,7 +156,7 @@ export default function ContractReviewerPage() {
               <ContractViewerOverlay
                 file={pdfFile}
                 activeFindingId={activeFindingId}
-                reviewFindings={reviewFindings}
+                reviewFindings={allFindings} // MODIFIKASI: Gunakan array datar
                 categoryColors={categoryColors}
                 textWithCoords={textWithCoords}
               />
@@ -165,47 +172,64 @@ export default function ContractReviewerPage() {
                 Review Findings
               </CardTitle>
             </CardHeader>
+            {/* MODIFIKASI: Implementasi Accordion Bertingkat */}
             <CardContent className="h-[calc(100%-80px)] overflow-y-auto">
-              <Accordion
-                type="single"
-                collapsible
-                className="w-full"
-                value={activeFindingId || ""}
-                // FIX: State is now controlled here, not in the trigger's onClick
-                onValueChange={(value) => setActiveFindingId(value)}
-              >
-                {reviewFindings.map((finding) => (
-                  <AccordionItem
-                    key={finding.id}
-                    value={finding.id}
-                    className={`mb-2 rounded-lg border-l-4 ${
-                      categoryColors[finding.category].border
-                    } bg-white dark:bg-gray-900`}
-                  >
-                    {/* FIX: onClick handler is removed from here */}
-                    <AccordionTrigger className="p-4 hover:no-underline">
-                      <div className="flex items-center gap-3">
-                        <Badge
-                          className={`${
-                            categoryColors[finding.category].badge
-                          } text-white`}
+              <Accordion type="multiple" className="w-full space-y-4">
+                {Object.entries(groupedFindings).map(
+                  ([groupTitle, findings]) => (
+                    <AccordionItem
+                      key={groupTitle}
+                      value={groupTitle}
+                      className="rounded-lg border bg-gray-50 dark:bg-gray-900"
+                    >
+                      <AccordionTrigger className="p-4 text-lg font-semibold hover:no-underline">
+                        {groupTitle} ({findings.length})
+                      </AccordionTrigger>
+                      <AccordionContent className="p-2 pt-0">
+                        <Accordion
+                          type="single"
+                          collapsible
+                          className="w-full space-y-2"
+                          value={activeFindingId || ""}
+                          onValueChange={(value) => setActiveFindingId(value)}
                         >
-                          {finding.category}
-                        </Badge>
-                        <span>
-                          Finding #{finding.id.split("-")[1]} on Page{" "}
-                          {finding.page}
-                        </span>
-                      </div>
-                    </AccordionTrigger>
-                    <AccordionContent className="p-4 pt-0">
-                      <p className="text-muted-foreground italic mb-2">
-                        "{finding.text}"
-                      </p>
-                      <p>{finding.comment}</p>
-                    </AccordionContent>
-                  </AccordionItem>
-                ))}
+                          {findings.map((finding) => (
+                            <AccordionItem
+                              key={finding.id}
+                              value={finding.id}
+                              id={finding.id}
+                              className={`rounded-lg border-l-4 ${
+                                categoryColors[finding.category].border
+                              } bg-white dark:bg-gray-800`}
+                            >
+                              <AccordionTrigger className="p-4 hover:no-underline">
+                                <div className="flex items-center gap-3 text-left">
+                                  <Badge
+                                    className={`${
+                                      categoryColors[finding.category].badge
+                                    } text-white`}
+                                  >
+                                    {finding.category}
+                                  </Badge>
+                                  <span>
+                                    Temuan #{finding.id.split("-")[1]} di Hal.{" "}
+                                    {finding.page}
+                                  </span>
+                                </div>
+                              </AccordionTrigger>
+                              <AccordionContent className="p-4 pt-0">
+                                <p className="text-muted-foreground italic mb-2">
+                                  "{finding.text}"
+                                </p>
+                                <p>{finding.comment}</p>
+                              </AccordionContent>
+                            </AccordionItem>
+                          ))}
+                        </Accordion>
+                      </AccordionContent>
+                    </AccordionItem>
+                  )
+                )}
               </Accordion>
             </CardContent>
           </Card>
