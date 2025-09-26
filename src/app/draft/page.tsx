@@ -69,10 +69,15 @@ interface ContractData {
   forceMajeure: string
 }
 
-export default function DraftPage() {
-  const [currentStep, setCurrentStep] = useState(0)
-  const [inputMethod, setInputMethod] = useState<'manual' | 'upload' | null>(null)
-  const [uploadedFile, setUploadedFile] = useState<File | null>(null)
+interface DraftPageProps {
+  initialInputMethod?: 'manual' | 'upload'
+   initialFile?: File | null
+}
+
+export default function DraftPage({ initialInputMethod, initialFile }: DraftPageProps) {
+  const [currentStep, setCurrentStep] = useState(initialInputMethod ? 1 : 0)
+  const [inputMethod, setInputMethod] = useState<'manual' | 'upload' | null>(initialInputMethod || null)
+  const [uploadedFile, setUploadedFile] = useState<File | null>(initialFile || null)
   const [isScanning, setIsScanning] = useState(false)
   const [scanProgress, setScanProgress] = useState(0)
   const fileInputRef = useRef<HTMLInputElement>(null)
@@ -295,16 +300,12 @@ export default function DraftPage() {
           {currentStep === 0 && (
             <div className="space-y-6">
               <div className="text-center mb-6">
-                <h3 className="text-lg font-semibold mb-4">Pilih Tipe Kontrak</h3>
-                <Select value={contractData.jenis} onValueChange={(value) => handleInputChange('jenis', value)}>
-                  <SelectTrigger className="w-full max-w-md mx-auto">
-                    <SelectValue placeholder="Pilih tipe kontrak" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="PARTNERSHIP">Partnership</SelectItem>
-                    <SelectItem value="EMPLOYMENT">Employment</SelectItem>
-                  </SelectContent>
-                </Select>
+                <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg">
+                  <p className="text-blue-800 font-medium">Kontrak Partnership</p>
+                  <p className="text-blue-600 text-sm mt-1">
+                    Kontrak kerjasama antara perusahaan untuk hubungan bisnis
+                  </p>
+                </div>
               </div>
 
               <div className="grid md:grid-cols-2 gap-6">

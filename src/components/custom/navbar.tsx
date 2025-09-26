@@ -93,7 +93,7 @@ export function Navbar() {
           Dashboard
         </Link>
         <Link
-          href="/draft"
+          href="/create"
           className="text-sm font-medium hover:underline underline-offset-4"
         >
           Create Contract
