@@ -79,47 +79,30 @@ export async function GET(req: NextRequest) {
 export async function POST(req: NextRequest) {
   try {
     const data = await req.json();
-
-    console.log("📝 Creating contract with data:", data);
-
-    // Create basic contract first
-    const {
-      contractType,
-      partnershipDetails,
-      employmentDetails,
-      ...contractData
-    } = data;
-
-    const contract = await prisma.contract.create({
-      data: contractData,
+    
+    console.log('📝 Creating contract with data:', {
+      namakontrak: data.namakontrak,
+      nomorkontrak: data.nomorkontrak,
+      judul: data.judul,
+      nominal: typeof data.nominal === 'number' ? data.nominal : 'invalid',
+      makskompensasi: typeof data.makskompensasi === 'number' ? data.makskompensasi : 'invalid',
+      type: data.type
     });
-
-    // Add type-specific details if provided
-    if (contractType === "partnership" && partnershipDetails) {
-      await prisma.partnership.create({
-        data: {
-          kontrakid: contract.id,
-          ...partnershipDetails,
+    
+    // Validate required fields
+    if (!data.namakontrak || !data.nomorkontrak || !data.judul) {
+      return NextResponse.json(
+        { 
+          success: false, 
+          error: 'Missing required fields: namakontrak, nomorkontrak, judul' 
         },
-      });
-    } else if (contractType === "employment" && employmentDetails) {
-      await prisma.employment.create({
-        data: {
-          kontrakid: contract.id,
-          ...employmentDetails,
-        },
-      });
+        { status: 400 }
+      );
     }
 
-    // Fetch the complete contract with details
-    const fullContract = await prisma.contract.findUnique({
-      where: { id: contract.id },
-      include: {
-        partnershipDetails: true,
-        employmentDetails: true,
-      },
-    });
-
+    // Use the helper function - all the sync logic is handled inside
+    const contract = await createContractWithDetails(data);
+    
     return NextResponse.json({
       success: true,
       message: "Contract created successfully",

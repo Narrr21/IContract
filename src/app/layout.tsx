@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { Poppins, Noto_Sans } from "next/font/google";
-import { Navbar } from "@/components/custom/navbar";
+// import { Navbar } from "@/components/custom/navbar";
 import { Footer } from "@/components/custom/footer";
 import "./globals.css";
 
@@ -31,7 +31,7 @@ export default function RootLayout({
       <body
         className={`${poppins.variable} ${notoSans.variable} font-sans antialiased`}
       >
-        <Navbar />
+        {/* <Navbar /> */}
         {children}
         <Footer />
       </body>

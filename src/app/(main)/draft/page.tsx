@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useState, useRef } from 'react'
+import React, { useState, useRef, useEffect } from 'react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -70,16 +70,25 @@ interface ContractData {
 }
 
 interface DraftPageProps {
-  initialInputMethod?: 'manual' | 'upload'
+   initialInputMethod?: 'manual' | 'upload'
    initialFile?: File | null
+   initialExtractedData?: ContractData | null
 }
 
-export default function DraftPage({ initialInputMethod, initialFile }: DraftPageProps) {
+export default function DraftPage({ initialInputMethod, initialFile, initialExtractedData }: DraftPageProps) {
   const [currentStep, setCurrentStep] = useState(initialInputMethod ? 1 : 0)
   const [inputMethod, setInputMethod] = useState<'manual' | 'upload' | null>(initialInputMethod || null)
   const [uploadedFile, setUploadedFile] = useState<File | null>(initialFile || null)
   const [isScanning, setIsScanning] = useState(false)
   const [scanProgress, setScanProgress] = useState(0)
+  const [isGenerating, setIsGenerating] = useState(false)
+
+  // Set initial extracted data if available
+  useEffect(() => {
+    if (initialExtractedData) {
+      setContractData(initialExtractedData)
+    }
+  }, [initialExtractedData])
   const fileInputRef = useRef<HTMLInputElement>(null)
   const [contractData, setContractData] = useState<ContractData>({
     nomorKontrak: '',
@@ -156,6 +165,149 @@ export default function DraftPage({ initialInputMethod, initialFile }: DraftPage
     return inputMethod === 'upload' && uploadedFile !== null
   }
 
+  // Helper function to calculate end date from start date and duration
+  const calculateEndDate = (startDate: Date | undefined, duration: string): Date | undefined => {
+    if (!startDate || !duration) return undefined
+    
+    const match = duration.match(/(\d+)\s*(hari|bulan|tahun|day|month|year)/i)
+    if (!match) return undefined
+    
+    const amount = parseInt(match[1])
+    const unit = match[2].toLowerCase()
+    const endDate = new Date(startDate)
+    
+    if (unit.includes('hari') || unit.includes('day')) {
+      endDate.setDate(endDate.getDate() + amount)
+    } else if (unit.includes('bulan') || unit.includes('month')) {
+      endDate.setMonth(endDate.getMonth() + amount)
+    } else if (unit.includes('tahun') || unit.includes('year')) {
+      endDate.setFullYear(endDate.getFullYear() + amount)
+    }
+    
+    return endDate
+  }
+
+  // Function to handle contract generation
+  const handleGenerateContract = async () => {
+    try {
+      setIsGenerating(true)
+      
+      // Validate required fields
+      const requiredFields = [
+        { field: contractData.nomorKontrak, name: 'Nomor Kontrak' },
+        { field: contractData.judul, name: 'Judul Kontrak' },
+        { field: contractData.tanggalMulai, name: 'Tanggal Mulai' },
+        { field: contractData.pihak1.namaPerusahaan, name: 'Nama Perusahaan Pihak 1' },
+        { field: contractData.pihak2.namaPerusahaan, name: 'Nama Perusahaan Pihak 2' },
+      ];
+
+      const missingFields = requiredFields.filter(({ field }) => !field).map(({ name }) => name);
+      
+      if (missingFields.length > 0) {
+        alert(`Harap isi field yang wajib: ${missingFields.join(', ')}`);
+        setIsGenerating(false);
+        return;
+      }
+
+      // Calculate end date from duration if not set
+      const endDate = calculateEndDate(contractData.tanggalMulai, contractData.durasi)
+      if (!endDate) {
+        alert('Format durasi tidak valid. Contoh: "12 bulan" atau "1 tahun"')
+        setIsGenerating(false)
+        return
+      }
+
+      // Transform contract data to match database schema
+      const contractPayload = {
+        namakontrak: contractData.judul,
+        counterparty: contractData.pihak2.namaPerusahaan || 'Unknown',
+        type: 'partnership',
+        nomorkontrak: contractData.nomorKontrak,
+        judul: contractData.judul,
+        jenis: contractData.jenis || 'PARTNERSHIP',
+        tanggalmulai: contractData.tanggalMulai,
+        tanggalakhir: endDate,
+        
+        // Pihak Pertama
+        perusahaan1: contractData.pihak1.namaPerusahaan,
+        direktur1: contractData.pihak1.namaDirektur,
+        alamat1: contractData.pihak1.alamat,
+        nomortel1: contractData.pihak1.nomorTelp,
+        email1: contractData.pihak1.email,
+        npwp1: contractData.pihak1.npwp,
+        nomorusaha1: contractData.pihak1.nomorUsaha,
+        
+        // Pihak Kedua
+        perusahaan2: contractData.pihak2.namaPerusahaan,
+        direktur2: contractData.pihak2.namaDirektur,
+        alamat2: contractData.pihak2.alamat,
+        nomortel2: contractData.pihak2.nomorTelp,
+        email2: contractData.pihak2.email,
+        npwp2: contractData.pihak2.npwp,
+        nomorusaha2: contractData.pihak2.nomorUsaha,
+        
+        // Ruang Lingkup
+        jenislayanan: contractData.jenisLayanan,
+        wilayahoperasi: contractData.wilayahOperasional,
+        desklayanan: contractData.deskripsiLayanan,
+        hak1: contractData.hakKewajibanPihak1,
+        hak2: contractData.hakKewajibanPihak2,
+        syaratlayanan: contractData.syaratLayanan,
+        
+        // Keuangan
+        nominal: parseFloat(contractData.nominal.replace(/[^\d.,]/g, '').replace(',', '.')) || 0,
+        tenggatbayar: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000), // Default 30 days from now
+        syaratbayar: contractData.syaratPembayaran,
+        bank: contractData.caraPembayaran.bank,
+        namapemilik: contractData.caraPembayaran.nama,
+        norek: contractData.caraPembayaran.norek,
+        denda: contractData.dendaKeterlambatan,
+        
+        // Klaim dan Sengketa
+        tenggatklaim: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000), // Default 14 days from now
+        makskompensasi: parseFloat(contractData.maksimalKompensasi.replace(/[^\d.,]/g, '').replace(',', '.')) || 0,
+        sengketa: contractData.penyelesaianSengketa,
+        majeure: contractData.forceMajeure
+      }
+
+      console.log('🚀 Sending contract data:', contractPayload)
+      
+      // Call API to create contract
+      const response = await fetch('/api/contract', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(contractPayload),
+      })
+
+      const result = await response.json()
+      
+      if (result.success) {
+        console.log('✅ Contract created:', result.contract)
+        
+        // Show success message
+        const successMessage = `Kontrak "${contractData.judul}" berhasil dibuat!\nID: ${result.contract?.id}\n\nAnda akan diarahkan ke dashboard...`;
+        alert(successMessage);
+        
+        // Redirect to dashboard to see the created contract
+        setTimeout(() => {
+          window.location.href = '/dashboard'
+        }, 2000)
+        
+      } else {
+        console.error('❌ Failed to create contract:', result)
+        alert(`Gagal membuat kontrak:\n${result.error || 'Unknown error'}\n\nDetail: ${result.details || 'No details available'}`)
+      }
+      
+    } catch (error) {
+      console.error('❌ Error generating contract:', error)
+      alert('Terjadi kesalahan saat membuat kontrak. Silakan coba lagi.')
+    } finally {
+      setIsGenerating(false)
+    }
+  }
+
   const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0]
     if (!file) return
@@ -216,27 +368,246 @@ export default function DraftPage({ initialInputMethod, initialFile }: DraftPage
   }
 
   const extractPDFData = async (file: File): Promise<ContractData> => {
-    const formData = new FormData()
-    formData.append('file', file)
+    try {
+      // Step 1: Extract raw text from PDF
+      const formData = new FormData();
+      formData.append('fileName', file.name);
+      
+      // First, get the raw text from PDF
+      const extractResponse = await fetch('/api/extract-text', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ fileName: file.name })
+      });
 
-    const response = await fetch('/api/process-pdf', {
-      method: 'POST',
-      body: formData,
-    })
+      if (!extractResponse.ok) {
+        throw new Error('Failed to extract text from PDF');
+      }
 
-    if (!response.ok) {
-      throw new Error('Failed to process PDF')
+      const extractData = await extractResponse.json();
+      
+      // Convert coordinate data to plain text
+      const extractedText = extractData.textData
+        ?.map((item: any) => {
+          if (typeof item === 'string') return item;
+          if (item.text) return item.text;
+          if (item.str) return item.str;
+          return '';
+        })
+        .filter((text: string) => text.trim())
+        .join(' ') || '';
+
+      if (!extractedText || extractedText.length < 100) {
+        throw new Error('Insufficient text content found in PDF');
+      }
+
+      console.log(`📄 Extracted ${extractedText.length} characters from PDF`);
+
+      // Step 2: Use AI to extract structured data
+      const aiResponse = await fetch('/api/draft', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          contractType: 'partnership',
+          requirements: extractedText,
+          assistanceType: 'extract',
+          additionalData: {
+            extractionType: 'form_data',
+            targetFields: [
+              'nomorKontrak', 'judul', 'jenis', 'tanggalMulai', 'durasi',
+              'pihak1', 'pihak2', 'jenisLayanan', 'deskripsiLayanan',
+              'wilayahOperasional', 'nominal', 'syaratPembayaran'
+            ]
+          }
+        })
+      });
+
+      if (!aiResponse.ok) {
+        throw new Error(`AI analysis failed: ${aiResponse.status}`);
+      }
+
+      const aiData = await aiResponse.json();
+      
+      if (!aiData.success) {
+        throw new Error(aiData.error || 'AI analysis failed');
+      }
+
+      console.log('🤖 AI analysis completed successfully');
+
+      // Step 3: Parse AI response to form data
+      const contractData = parseAIResponseToContractData(aiData.assistance);
+      
+      return contractData;
+
+    } catch (error) {
+      console.error('❌ Error extracting PDF data:', error);
+      throw error;
     }
+  };
 
-    const result = await response.json()
-    
-    // Convert the API response to ContractData format
-    const data = result.data
-    return {
-      ...data,
-      tanggalMulai: data.tanggalMulai ? new Date(data.tanggalMulai) : undefined
+  // New function to parse AI response into ContractData format
+  const parseAIResponseToContractData = (aiResponse: string): ContractData => {
+    try {
+      console.log('📊 Parsing AI response to contract data...');
+      
+      // Initialize with empty data
+      const contractData: ContractData = {
+        nomorKontrak: '',
+        judul: '',
+        jenis: 'PARTNERSHIP',
+        tanggalMulai: undefined,
+        durasi: '',
+        pihak1: {
+          namaPerusahaan: '', namaDirektur: '', alamat: '', nomorTelp: '', email: '', npwp: '', nomorUsaha: ''
+        },
+        pihak2: {
+          namaPerusahaan: '', namaDirektur: '', alamat: '', nomorTelp: '', email: '', npwp: '', nomorUsaha: ''
+        },
+        jenisLayanan: '', deskripsiLayanan: '', wilayahOperasional: '', hakKewajibanPihak1: '', hakKewajibanPihak2: '', syaratLayanan: '',
+        nominal: '', syaratPembayaran: '', caraPembayaran: { bank: '', nama: '', norek: '' }, jangkaWaktuPembayaran: '', dendaKeterlambatan: '',
+        batasWaktuKlaim: '', maksimalKompensasi: '', penyelesaianSengketa: '', forceMajeure: ''
+      };
+
+      // Parse different sections of the AI response
+      const sections = aiResponse.split(/(?=##|\*\*)/);
+      
+      sections.forEach(section => {
+        const lowerSection = section.toLowerCase();
+        
+        // Extract contract number
+        const contractNumMatch = section.match(/(?:contract number|nomor kontrak|no\.\s*kontrak)[\s:]*([^\n\r]+)/i);
+        if (contractNumMatch && !contractData.nomorKontrak) {
+          contractData.nomorKontrak = contractNumMatch[1].trim();
+        }
+
+        // Extract contract title
+        const titleMatch = section.match(/(?:title|judul|contract title)[\s:]*([^\n\r]+)/i);
+        if (titleMatch && !contractData.judul) {
+          contractData.judul = titleMatch[1].trim();
+        }
+
+        // Extract dates
+        const dateMatch = section.match(/(\d{1,2}[\/\-]\d{1,2}[\/\-]\d{4}|\d{4}[\/\-]\d{1,2}[\/\-]\d{1,2})/);
+        if (dateMatch && !contractData.tanggalMulai) {
+          try {
+            const dateStr = dateMatch[1];
+            const date = new Date(dateStr.replace(/[\/\-]/g, '-'));
+            if (!isNaN(date.getTime())) {
+              contractData.tanggalMulai = date;
+            }
+          } catch (e) {
+            console.warn('Failed to parse date:', dateMatch[1]);
+          }
+        }
+
+        // Extract company names
+        const companyMatches = section.match(/(?:company|perusahaan|pt\.?\s*|cv\.?\s*)([^\n\r,;]+)/gi);
+        if (companyMatches) {
+          companyMatches.forEach((match, index) => {
+            const cleanCompany = match.replace(/^(?:company|perusahaan|pt\.?\s*|cv\.?\s*)/i, '').trim();
+            if (cleanCompany && cleanCompany.length > 2) {
+              if (index === 0 && !contractData.pihak1.namaPerusahaan) {
+                contractData.pihak1.namaPerusahaan = cleanCompany;
+              } else if (index === 1 && !contractData.pihak2.namaPerusahaan) {
+                contractData.pihak2.namaPerusahaan = cleanCompany;
+              }
+            }
+          });
+        }
+
+        // Extract monetary values
+        const moneyMatch = section.match(/(?:rp\.?\s*|idr\s*|rupiah\s*)?([\d.,]+)(?:\s*(?:juta|million|miliar|billion))?/i);
+        if (moneyMatch && !contractData.nominal) {
+          contractData.nominal = moneyMatch[0].trim();
+        }
+
+        // Extract service descriptions
+        if (lowerSection.includes('service') || lowerSection.includes('layanan') || lowerSection.includes('scope')) {
+          const serviceMatch = section.match(/(?:service|layanan|scope)[\s:]*([^\n\r]{20,200})/i);
+          if (serviceMatch && !contractData.jenisLayanan) {
+            contractData.jenisLayanan = serviceMatch[1].trim();
+          }
+        }
+
+        // Extract addresses
+        const addressMatch = section.match(/(?:address|alamat)[\s:]*([^\n\r]{10,100})/i);
+        if (addressMatch) {
+          const address = addressMatch[1].trim();
+          if (!contractData.pihak1.alamat) {
+            contractData.pihak1.alamat = address;
+          } else if (!contractData.pihak2.alamat) {
+            contractData.pihak2.alamat = address;
+          }
+        }
+
+        // Extract phone numbers
+        const phoneMatch = section.match(/(?:\+62|62|0)[\d\-\s]{8,15}/);
+        if (phoneMatch) {
+          const phone = phoneMatch[0].trim();
+          if (!contractData.pihak1.nomorTelp) {
+            contractData.pihak1.nomorTelp = phone;
+          } else if (!contractData.pihak2.nomorTelp) {
+            contractData.pihak2.nomorTelp = phone;
+          }
+        }
+
+        // Extract emails
+        const emailMatch = section.match(/[\w.-]+@[\w.-]+\.[a-zA-Z]{2,}/);
+        if (emailMatch) {
+          const email = emailMatch[0].trim();
+          if (!contractData.pihak1.email) {
+            contractData.pihak1.email = email;
+          } else if (!contractData.pihak2.email) {
+            contractData.pihak2.email = email;
+          }
+        }
+      });
+
+      // Set defaults if certain fields are empty
+      if (!contractData.jenis) {
+        contractData.jenis = 'PARTNERSHIP';
+      }
+      
+      if (!contractData.durasi) {
+        contractData.durasi = '12 bulan'; // Default duration
+      }
+
+      console.log('✅ Successfully parsed contract data from AI response');
+      console.log('📋 Extracted data:', {
+        nomorKontrak: contractData.nomorKontrak,
+        judul: contractData.judul,
+        hasCompany1: !!contractData.pihak1.namaPerusahaan,
+        hasCompany2: !!contractData.pihak2.namaPerusahaan,
+        hasDate: !!contractData.tanggalMulai,
+        hasNominal: !!contractData.nominal
+      });
+
+      return contractData;
+
+    } catch (error) {
+      console.error('❌ Error parsing AI response:', error);
+      
+      // Return minimal data structure if parsing fails
+      return {
+        nomorKontrak: 'PKS-' + Date.now(),
+        judul: 'Kontrak Partnership',
+        jenis: 'PARTNERSHIP',
+        tanggalMulai: new Date(),
+        durasi: '12 bulan',
+        pihak1: {
+          namaPerusahaan: '', namaDirektur: '', alamat: '', nomorTelp: '', email: '', npwp: '', nomorUsaha: ''
+        },
+        pihak2: {
+          namaPerusahaan: '', namaDirektur: '', alamat: '', nomorTelp: '', email: '', npwp: '', nomorUsaha: ''
+        },
+        jenisLayanan: '', deskripsiLayanan: '', wilayahOperasional: '', hakKewajibanPihak1: '', hakKewajibanPihak2: '', syaratLayanan: '',
+        nominal: '', syaratPembayaran: '', caraPembayaran: { bank: '', nama: '', norek: '' }, jangkaWaktuPembayaran: '', dendaKeterlambatan: '',
+        batasWaktuKlaim: '', maksimalKompensasi: '', penyelesaianSengketa: '', forceMajeure: ''
+      };
     }
-  }
+  };
 
   const nextStep = () => {
     if (currentStep < steps.length - 1) {
@@ -908,8 +1279,15 @@ export default function DraftPage({ initialInputMethod, initialFile }: DraftPage
             
             <div className="flex gap-2">
               {currentStep === steps.length - 1 ? (
-                <Button onClick={() => console.log('Generate Contract', contractData)}>
-                  Generate Kontrak
+                <Button onClick={handleGenerateContract} disabled={isGenerating}>
+                  {isGenerating ? (
+                    <span className="flex items-center">
+                      <span className="animate-spin mr-2">⏳</span>
+                      Generating...
+                    </span>
+                  ) : (
+                    'Generate Kontrak'
+                  )}
                 </Button>
               ) : (
                 <Button 

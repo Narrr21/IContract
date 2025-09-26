@@ -392,7 +392,147 @@ Please provide a comprehensive summary of all important contract elements in a s
       maxTokens: 3000
     });
   }
+  /**
+   * Extract structured contract data from raw text
+   */
+  /**
+   * Extract structured contract data from raw text
+   */
+  async extractContractData(contractContent: string, contractType: string): Promise<AIResponse> {
+    // Different system prompts based on contract type
+    let systemPrompt: string;
+    
+    if (contractType === 'employment') {
+      systemPrompt = `You are an employment contract data extraction specialist. Extract structured information from employment/job contract documents.
+
+  Extract and organize the following information from the provided employment contract.
+
+  **IMPORTANT: Format each piece of information with a semicolon (;) separator for easy parsing.**
+
+  Use this exact format structure:
+
+  CONTRACT_NUMBER: [value];
+  CONTRACT_TITLE: [value];
+  EMPLOYMENT_TYPE: [value];
+  START_DATE: [DD/MM/YYYY];
+  DURATION: [value];
+  PROBATION_PERIOD: [value];
+
+  COMPANY_NAME: [value];
+  COMPANY_DIRECTOR: [value];
+  COMPANY_ADDRESS: [value];
+  COMPANY_PHONE: [value];
+  COMPANY_EMAIL: [value];
+  COMPANY_NPWP: [value];
+
+  EMPLOYEE_NAME: [value];
+  EMPLOYEE_POSITION: [value];
+  EMPLOYEE_ADDRESS: [value];
+  EMPLOYEE_GENDER: [value];
+  EMPLOYEE_AGE: [value];
+  CONTRACT_TYPE: [PKWTT/PKWT];
+  EMPLOYEE_ID: [value];
+  EMPLOYEE_PHONE: [value];
+  EMPLOYEE_EMAIL: [value];
+
+  JOB_DESCRIPTION: [value];
+  WORK_LOCATION: [value];
+  WORK_SCHEDULE: [value];
+  BREAK_TIME: [value];
+  LEAVE_POLICY: [value];
+  OVERTIME_POLICY: [value];
+
+  BASIC_SALARY: [value];
+  FIXED_ALLOWANCES: [value];
+  VARIABLE_ALLOWANCES: [value];
+  SOCIAL_SECURITY: [value];
+  HEALTH_INSURANCE: [value];
+  OTHER_BENEFITS: [value];
+  PAYMENT_SCHEDULE: [value];
+
+  CONFIDENTIALITY: [value];
+  NON_COMPETE: [value];
+  DISCIPLINARY_RULES: [value];
+  TERMINATION_CONDITIONS: [value];
+  NOTICE_PERIOD: [value];
+  SEVERANCE_PAY: [value];
+  DISPUTE_RESOLUTION: [value];
+
+  If any information is not found, use: "Not specified in document;"
+
+  Focus on employment-specific terms and Indonesian labor law requirements.`;
+
+    } else {
+      // Partnership contract with semicolon formatting
+      systemPrompt = `You are a contract data extraction specialist. Extract structured information from partnership/business contract documents.
+
+  Extract and organize the following information from the provided contract.
+
+  **IMPORTANT: Format each piece of information with a semicolon (;) separator for easy parsing.**
+
+  Use this exact format structure:
+
+  CONTRACT_NUMBER: [value];
+  CONTRACT_TITLE: [value];
+  CONTRACT_TYPE: [Partnership/Service/Supply];
+  START_DATE: [DD/MM/YYYY];
+  DURATION: [value];
+  CONTRACT_VALUE: [value];
+
+  PARTY1_COMPANY: [value];
+  PARTY1_DIRECTOR: [value];
+  PARTY1_ADDRESS: [value];
+  PARTY1_PHONE: [value];
+  PARTY1_EMAIL: [value];
+  PARTY1_NPWP: [value];
+  PARTY1_LICENSE: [value];
+
+  PARTY2_COMPANY: [value];
+  PARTY2_DIRECTOR: [value];
+  PARTY2_ADDRESS: [value];
+  PARTY2_PHONE: [value];
+  PARTY2_EMAIL: [value];
+  PARTY2_NPWP: [value];
+  PARTY2_LICENSE: [value];
+
+  SERVICE_TYPE: [value];
+  SERVICE_DESCRIPTION: [value];
+  OPERATING_TERRITORY: [value];
+  PARTY1_OBLIGATIONS: [value];
+  PARTY2_OBLIGATIONS: [value];
+  SERVICE_TERMS: [value];
+
+  PAYMENT_TERMS: [value];
+  PAYMENT_METHOD: [value];
+  PAYMENT_SCHEDULE: [value];
+  LATE_PENALTIES: [value];
+
+  CLAIM_DEADLINE: [value];
+  MAX_COMPENSATION: [value];
+  DISPUTE_RESOLUTION: [value];
+  FORCE_MAJEURE: [value];
+
+  If any information is not found, use: "Not specified in document;"
+
+  Focus on extracting exact values and text from the document.`;
+    }
+
+    const userMessage = `Please extract structured contract information from this ${contractType} document:
+
+  ${contractContent}
+
+  Provide a comprehensive extraction using the semicolon-separated format specified above.`;
+
+    return this.makeRequest([
+      { role: 'user', content: userMessage }
+    ], {
+      systemPrompt,
+      temperature: 0.1, // Very low temperature for consistent extraction
+      maxTokens: 3000
+    });
+  }
 }
+
 
 // Export singleton instance
 export const aiService = new AIService();

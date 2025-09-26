@@ -79,7 +79,7 @@ model Partnership {
   hak1            String
   hak2            String
   syaratlayanan   String
-  nominal         BigInt
+  nominal         Int
   tenggatbayar    DateTime
   syaratbayar     String
   bank            String
@@ -87,7 +87,7 @@ model Partnership {
   norek           String
   denda           String
   tenggatklaim    DateTime
-  makskompensasi  BigInt
+  makskompensasi  Int
   sengketa        String
   majeure         String
 
@@ -134,9 +134,9 @@ model Employment {
   ketentulembur         String
   
   // Compensation
-  gajipokok             BigInt
-  tunjangantetap        BigInt
-  tunjangantidaktetap   BigInt
+  gajipokok             Int
+  tunjangantetap        Int
+  tunjangantidaktetap   Int
   jaminansosial         String
   fasilitaslain         String
   
