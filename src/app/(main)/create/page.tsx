@@ -63,6 +63,81 @@ interface ContractData {
   forceMajeure: string
 }
 
+interface EmploymentContractData {
+  // Informasi Umum Perjanjian
+  nomorKontrak: string
+  judul: string
+  jenis: string
+  tanggalMulai: Date | undefined
+  durasi: string
+  
+  // Identitas Pegawai
+  namaLengkap: string
+  tempatLahir: string
+  tanggalLahir: Date | undefined
+  jenisKelamin: 'L' | 'P' | ''
+  alamatLengkap: string
+  nomorTelepon: string
+  email: string
+  pendidikanTerakhir: string
+  nomorIdentitas: string
+  jenisIdentitas: 'KTP' | 'Passport' | 'SIM' | ''
+  
+  // Identitas Perusahaan
+  namaPerusahaan: string
+  alamatPerusahaan: string
+  nomorTeleponPerusahaan: string
+  emailPerusahaan: string
+  npwpPerusahaan: string
+  namaPimpinan: string
+  jabatanPimpinan: string
+  
+  // Detail Pekerjaan
+  posisiJabatan: string
+  departemen: string
+  lokasiKerja: string
+  tanggalMulaiKerja: Date | undefined
+  jenisKontrak: 'PKWTT' | 'PKWT' | ''
+  masaPercobaan: string
+  deskripsiPekerjaan: string
+  
+  // Jam Kerja & Waktu
+  hariKerja: string
+  jamKerja: string
+  jamIstirahat: string
+  jamLembur: string
+  
+  // Kompensasi & Tunjangan
+  gajiPokok: string
+  tunjanganTetap: string
+  tunjanganVariabel: string
+  metodePembayaran: string
+  jadwalPembayaran: string
+  
+  // Fasilitas & Benefit
+  bpjs: string
+  asuransiKesehatan: string
+  cuti: string
+  fasilitasLain: string
+  
+  // Hak & Kewajiban
+  hakPegawai: string
+  kewajibanPegawai: string
+  hakPerusahaan: string
+  kewajibanPerusahaan: string
+  
+  // Perlindungan Hukum
+  kerahasiaan: string
+  nonKompete: string
+  aturanDisiplin: string
+  keselamatanKerja: string
+  perlindunganData: string
+  sanksiPelanggaran: string
+  prosedurPenyelesaianSengketa: string
+  masaNotice: string
+  pesangonPHK: string
+}
+
 export default function CreateContractPage() {
   const [selectedContractType, setSelectedContractType] = useState<ContractType | null>(null)
   const [selectedInputMethod, setSelectedInputMethod] = useState<InputMethod | null>(null)
@@ -71,6 +146,7 @@ export default function CreateContractPage() {
   const [scanProgress, setScanProgress] = useState(0)
   const [scanError, setScanError] = useState<string | null>(null)
   const [extractedData, setExtractedData] = useState<ContractData | null>(null)
+  const [extractedEmploymentData, setExtractedEmploymentData] = useState<EmploymentContractData | null>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
 
   const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -121,8 +197,15 @@ export default function CreateContractPage() {
       
       // Stage 3: Process and structure data (80-100%)
       setScanProgress(90)
-      const structuredData = parseAIResponseToContractData(aiExtractedData)
-      setExtractedData(structuredData)
+      if (selectedContractType === 'employment') {
+        const employmentData = parseAIResponseToEmploymentData(aiExtractedData)
+        setExtractedEmploymentData(employmentData)
+        setExtractedData(null) // Clear partnership data
+      } else {
+        const structuredData = parseAIResponseToContractData(aiExtractedData)
+        setExtractedData(structuredData)
+        setExtractedEmploymentData(null) // Clear employment data
+      }
       
       setScanProgress(100)
       console.log('✅ PDF processing completed successfully')
@@ -240,10 +323,10 @@ export default function CreateContractPage() {
     }
   }
 
-  // Enhanced parsing function that handles employment contract structure
+  // Enhanced parsing function that handles semicolon-separated AI response
   const parseAIResponseToContractData = (aiResponse: string): ContractData => {
     try {
-      console.log('📊 Parsing AI response to contract data...');
+      console.log('📊 Parsing semicolon-separated AI response...');
       console.log('🔍 Contract type:', selectedContractType);
       
       // Initialize with contract-type-specific defaults
@@ -253,10 +336,10 @@ export default function CreateContractPage() {
         jenis: selectedContractType?.toUpperCase() || 'PARTNERSHIP',
         tanggalMulai: undefined,
         durasi: '',
-        pihak1: { // For employment: this is the company
+        pihak1: {
           namaPerusahaan: '', namaDirektur: '', alamat: '', nomorTelp: '', email: '', npwp: '', nomorUsaha: ''
         },
-        pihak2: { // For employment: this is the employee (using company fields for simplicity)
+        pihak2: {
           namaPerusahaan: '', namaDirektur: '', alamat: '', nomorTelp: '', email: '', npwp: '', nomorUsaha: ''
         },
         jenisLayanan: '', deskripsiLayanan: '', wilayahOperasional: '', hakKewajibanPihak1: '', hakKewajibanPihak2: '', syaratLayanan: '',
@@ -264,192 +347,128 @@ export default function CreateContractPage() {
         batasWaktuKlaim: '', maksimalKompensasi: '', penyelesaianSengketa: '', forceMajeure: ''
       };
 
-      // Split response into sections for easier parsing
-      const sections = aiResponse.split(/(?=##|#\s|\*\*)/);
-      
-      sections.forEach(section => {
-        const lowerSection = section.toLowerCase();
+      // Helper function to extract value after colon and before semicolon
+      const extractValue = (text: string, key: string): string => {
+        const regex = new RegExp(`${key}\\s*:\\s*([^;]+);?`, 'i');
+        const match = text.match(regex);
+        if (match && match[1]) {
+          const value = match[1].trim();
+          return value === 'Not specified in document' ? '' : value;
+        }
+        return '';
+      };
+
+      // Helper function to parse date
+      const parseDate = (dateStr: string): Date | undefined => {
+        if (!dateStr || dateStr === 'Not specified in document') return undefined;
+        try {
+          // Handle DD/MM/YYYY format
+          const parts = dateStr.split('/');
+          if (parts.length === 3) {
+            const day = parseInt(parts[0]);
+            const month = parseInt(parts[1]) - 1; // Month is 0-indexed
+            const year = parseInt(parts[2]);
+            return new Date(year, month, day);
+          }
+          return new Date(dateStr);
+        } catch {
+          return undefined;
+        }
+      };
+
+      if (selectedContractType === 'employment') {
+        // EMPLOYMENT CONTRACT PARSING
         
-        // Contract Number
-        let contractMatch = section.match(/(?:contract number|contract id|nomor kontrak|no\.?\s*kontrak)[\s:]*([^\n\r]+)/i);
-        if (contractMatch && !contractData.nomorKontrak) {
-          contractData.nomorKontrak = contractMatch[1].trim().replace(/^[-:\s]+/, '');
-        }
+        // Basic Information
+        contractData.nomorKontrak = extractValue(aiResponse, 'CONTRACT_NUMBER');
+        contractData.judul = extractValue(aiResponse, 'CONTRACT_TITLE');
+        contractData.jenis = extractValue(aiResponse, 'EMPLOYMENT_TYPE') || 'EMPLOYMENT';
+        contractData.tanggalMulai = parseDate(extractValue(aiResponse, 'START_DATE'));
+        contractData.durasi = extractValue(aiResponse, 'DURATION');
+        
+        // Company Information (Pihak 1)
+        contractData.pihak1.namaPerusahaan = extractValue(aiResponse, 'COMPANY_NAME');
+        contractData.pihak1.namaDirektur = extractValue(aiResponse, 'COMPANY_DIRECTOR');
+        contractData.pihak1.alamat = extractValue(aiResponse, 'COMPANY_ADDRESS');
+        contractData.pihak1.nomorTelp = extractValue(aiResponse, 'COMPANY_PHONE');
+        contractData.pihak1.email = extractValue(aiResponse, 'COMPANY_EMAIL');
+        contractData.pihak1.npwp = extractValue(aiResponse, 'COMPANY_NPWP');
+        
+        // Employee Information (Pihak 2 - using company fields creatively)
+        contractData.pihak2.namaPerusahaan = extractValue(aiResponse, 'EMPLOYEE_NAME'); // Employee name
+        contractData.pihak2.namaDirektur = extractValue(aiResponse, 'EMPLOYEE_POSITION'); // Position
+        contractData.pihak2.alamat = extractValue(aiResponse, 'EMPLOYEE_ADDRESS');
+        contractData.pihak2.nomorTelp = extractValue(aiResponse, 'EMPLOYEE_PHONE');
+        contractData.pihak2.email = extractValue(aiResponse, 'EMPLOYEE_EMAIL');
+        contractData.pihak2.npwp = extractValue(aiResponse, 'EMPLOYEE_ID'); // ID Number
+        contractData.pihak2.nomorUsaha = extractValue(aiResponse, 'CONTRACT_TYPE'); // PKWT/PKWTT
+        
+        // Job Details
+        contractData.jenisLayanan = extractValue(aiResponse, 'EMPLOYEE_POSITION');
+        contractData.deskripsiLayanan = extractValue(aiResponse, 'JOB_DESCRIPTION');
+        contractData.wilayahOperasional = extractValue(aiResponse, 'WORK_LOCATION');
+        contractData.hakKewajibanPihak1 = extractValue(aiResponse, 'WORK_SCHEDULE') + ' | ' + extractValue(aiResponse, 'BREAK_TIME');
+        contractData.hakKewajibanPihak2 = extractValue(aiResponse, 'LEAVE_POLICY') + ' | ' + extractValue(aiResponse, 'OVERTIME_POLICY');
+        
+        // Compensation
+        contractData.nominal = extractValue(aiResponse, 'BASIC_SALARY');
+        contractData.syaratPembayaran = extractValue(aiResponse, 'PAYMENT_SCHEDULE');
+        
+        // Legal Terms
+        contractData.penyelesaianSengketa = extractValue(aiResponse, 'DISPUTE_RESOLUTION');
+        contractData.batasWaktuKlaim = extractValue(aiResponse, 'NOTICE_PERIOD');
+        contractData.maksimalKompensasi = extractValue(aiResponse, 'SEVERANCE_PAY');
 
-        // Contract Title/Job Position
-        let titleMatch;
-        if (selectedContractType === 'employment') {
-          titleMatch = section.match(/(?:job title|position|jabatan|contract title|judul)[\s:]*([^\n\r]+)/i);
-        } else {
-          titleMatch = section.match(/(?:contract title|judul|title)[\s:]*([^\n\r]+)/i);
-        }
-        if (titleMatch && !contractData.judul) {
-          contractData.judul = titleMatch[1].trim().replace(/^[-:\s]+/, '');
-        }
+      } else {
+        // PARTNERSHIP CONTRACT PARSING
+        
+        // Basic Information
+        contractData.nomorKontrak = extractValue(aiResponse, 'CONTRACT_NUMBER');
+        contractData.judul = extractValue(aiResponse, 'CONTRACT_TITLE');
+        contractData.jenis = extractValue(aiResponse, 'CONTRACT_TYPE') || 'PARTNERSHIP';
+        contractData.tanggalMulai = parseDate(extractValue(aiResponse, 'START_DATE'));
+        contractData.durasi = extractValue(aiResponse, 'DURATION');
+        contractData.nominal = extractValue(aiResponse, 'CONTRACT_VALUE');
+        
+        // Party 1 Information
+        contractData.pihak1.namaPerusahaan = extractValue(aiResponse, 'PARTY1_COMPANY');
+        contractData.pihak1.namaDirektur = extractValue(aiResponse, 'PARTY1_DIRECTOR');
+        contractData.pihak1.alamat = extractValue(aiResponse, 'PARTY1_ADDRESS');
+        contractData.pihak1.nomorTelp = extractValue(aiResponse, 'PARTY1_PHONE');
+        contractData.pihak1.email = extractValue(aiResponse, 'PARTY1_EMAIL');
+        contractData.pihak1.npwp = extractValue(aiResponse, 'PARTY1_NPWP');
+        contractData.pihak1.nomorUsaha = extractValue(aiResponse, 'PARTY1_LICENSE');
+        
+        // Party 2 Information
+        contractData.pihak2.namaPerusahaan = extractValue(aiResponse, 'PARTY2_COMPANY');
+        contractData.pihak2.namaDirektur = extractValue(aiResponse, 'PARTY2_DIRECTOR');
+        contractData.pihak2.alamat = extractValue(aiResponse, 'PARTY2_ADDRESS');
+        contractData.pihak2.nomorTelp = extractValue(aiResponse, 'PARTY2_PHONE');
+        contractData.pihak2.email = extractValue(aiResponse, 'PARTY2_EMAIL');
+        contractData.pihak2.npwp = extractValue(aiResponse, 'PARTY2_NPWP');
+        contractData.pihak2.nomorUsaha = extractValue(aiResponse, 'PARTY2_LICENSE');
+        
+        // Service Information
+        contractData.jenisLayanan = extractValue(aiResponse, 'SERVICE_TYPE');
+        contractData.deskripsiLayanan = extractValue(aiResponse, 'SERVICE_DESCRIPTION');
+        contractData.wilayahOperasional = extractValue(aiResponse, 'OPERATING_TERRITORY');
+        contractData.hakKewajibanPihak1 = extractValue(aiResponse, 'PARTY1_OBLIGATIONS');
+        contractData.hakKewajibanPihak2 = extractValue(aiResponse, 'PARTY2_OBLIGATIONS');
+        contractData.syaratLayanan = extractValue(aiResponse, 'SERVICE_TERMS');
+        
+        // Financial Terms
+        contractData.syaratPembayaran = extractValue(aiResponse, 'PAYMENT_TERMS');
+        contractData.jangkaWaktuPembayaran = extractValue(aiResponse, 'PAYMENT_SCHEDULE');
+        contractData.dendaKeterlambatan = extractValue(aiResponse, 'LATE_PENALTIES');
+        
+        // Legal Terms
+        contractData.batasWaktuKlaim = extractValue(aiResponse, 'CLAIM_DEADLINE');
+        contractData.maksimalKompensasi = extractValue(aiResponse, 'MAX_COMPENSATION');
+        contractData.penyelesaianSengketa = extractValue(aiResponse, 'DISPUTE_RESOLUTION');
+        contractData.forceMajeure = extractValue(aiResponse, 'FORCE_MAJEURE');
+      }
 
-        // Dates
-        const dateMatch = section.match(/(?:start date|tanggal mulai|effective date)[\s:]*(\d{1,2}[\/\-]\d{1,2}[\/\-]\d{4}|\d{4}[\/\-]\d{1,2}[\/\-]\d{1,2})/i);
-        if (dateMatch && !contractData.tanggalMulai) {
-          try {
-            const dateStr = dateMatch[1];
-            let date: Date;
-            if (dateStr.includes('/')) {
-              const parts = dateStr.split('/');
-              if (parts[2].length === 4) {
-                // DD/MM/YYYY or MM/DD/YYYY
-                date = new Date(`${parts[2]}-${parts[1]}-${parts[0]}`);
-              } else {
-                date = new Date(dateStr);
-              }
-            } else {
-              date = new Date(dateStr);
-            }
-            if (!isNaN(date.getTime())) {
-              contractData.tanggalMulai = date;
-            }
-          } catch (e) {
-            console.warn('Failed to parse date:', dateMatch[1]);
-          }
-        }
-
-        // Duration
-        const durationMatch = section.match(/(?:duration|durasi|contract period)[\s:]*([^\n\r]{5,50})/i);
-        if (durationMatch && !contractData.durasi) {
-          contractData.durasi = durationMatch[1].trim().replace(/^[-:\s]+/, '');
-        }
-
-        if (selectedContractType === 'employment') {
-          // EMPLOYMENT-SPECIFIC PARSING
-          
-          // Company Information
-          const companyMatch = section.match(/(?:company name|perusahaan|employer)[\s:]*([^\n\r]+)/i);
-          if (companyMatch && !contractData.pihak1.namaPerusahaan) {
-            contractData.pihak1.namaPerusahaan = companyMatch[1].trim().replace(/^[-:\s]+/, '');
-          }
-
-          // Employee Name
-          const employeeMatch = section.match(/(?:employee full name|employee name|nama lengkap|nama karyawan)[\s:]*([^\n\r]+)/i);
-          if (employeeMatch && !contractData.pihak2.namaPerusahaan) {
-            contractData.pihak2.namaPerusahaan = employeeMatch[1].trim().replace(/^[-:\s]+/, ''); // Using namaPerusahaan field for employee name
-          }
-
-          // Director/HR Manager
-          const directorMatch = section.match(/(?:director|hr manager|pimpinan|direktur)[\s:]*([^\n\r]+)/i);
-          if (directorMatch && !contractData.pihak1.namaDirektur) {
-            contractData.pihak1.namaDirektur = directorMatch[1].trim().replace(/^[-:\s]+/, '');
-          }
-
-          // Job Description
-          const jobDescMatch = section.match(/(?:job description|responsibilities|tanggung jawab|deskripsi pekerjaan)[\s:]*([^\n\r#]{20,500})/i);
-          if (jobDescMatch && !contractData.deskripsiLayanan) {
-            contractData.deskripsiLayanan = jobDescMatch[1].trim().replace(/^[-:\s]+/, '');
-          }
-
-          // Position/Job Title (for jenisLayanan field)
-          const positionMatch = section.match(/(?:job title|position|jabatan)[\s:]*([^\n\r]+)/i);
-          if (positionMatch && !contractData.jenisLayanan) {
-            contractData.jenisLayanan = positionMatch[1].trim().replace(/^[-:\s]+/, '');
-          }
-
-          // Salary
-          const salaryMatch = section.match(/(?:basic salary|gaji pokok|salary|gaji|monthly salary)[\s:]*(?:rp\.?\s*|idr\s*|rupiah\s*)?([\d.,]+)(?:\s*(?:juta|million|ribu|thousand|per month|\/bulan))?/i);
-          if (salaryMatch && !contractData.nominal) {
-            contractData.nominal = salaryMatch[0].trim();
-          }
-
-          // Work Location
-          const workLocationMatch = section.match(/(?:work location|tempat kerja|office)[\s:]*([^\n\r]+)/i);
-          if (workLocationMatch && !contractData.wilayahOperasional) {
-            contractData.wilayahOperasional = workLocationMatch[1].trim().replace(/^[-:\s]+/, '');
-          }
-
-        } else {
-          // PARTNERSHIP-SPECIFIC PARSING (original logic)
-          
-          const companyMatches = section.match(/(?:company|perusahaan|pt\.?\s*|cv\.?\s*)([^\n\r,;]+)/gi);
-          if (companyMatches) {
-            companyMatches.forEach((match, index) => {
-              const cleanCompany = match.replace(/^(?:company|perusahaan|pt\.?\s*|cv\.?\s*)/i, '').trim();
-              if (cleanCompany && cleanCompany.length > 2) {
-                if (index === 0 && !contractData.pihak1.namaPerusahaan) {
-                  contractData.pihak1.namaPerusahaan = cleanCompany;
-                } else if (index === 1 && !contractData.pihak2.namaPerusahaan) {
-                  contractData.pihak2.namaPerusahaan = cleanCompany;
-                }
-              }
-            });
-          }
-
-          // Service description for partnerships
-          if (lowerSection.includes('service') || lowerSection.includes('layanan') || lowerSection.includes('scope')) {
-            const serviceMatch = section.match(/(?:service|layanan|scope)[\s:]*([^\n\r]{20,200})/i);
-            if (serviceMatch && !contractData.deskripsiLayanan) {
-              contractData.deskripsiLayanan = serviceMatch[1].trim();
-            }
-          }
-
-          // Contract value for partnerships
-          const moneyMatch = section.match(/(?:value|amount|nilai|rp\.?\s*|idr\s*|rupiah\s*)?([\d.,]+)(?:\s*(?:juta|million|miliar|billion))?/i);
-          if (moneyMatch && !contractData.nominal) {
-            contractData.nominal = moneyMatch[0].trim();
-          }
-        }
-
-        // COMMON PARSING (both contract types)
-
-        // Addresses
-        const addressMatches = section.match(/(?:address|alamat)[\s:]*([^\n\r]{10,200})/gi);
-        if (addressMatches) {
-          addressMatches.forEach((match, index) => {
-            const address = match.replace(/^(?:address|alamat)[\s:]*/i, '').trim();
-            if (address && address.length > 5) {
-              if (index === 0 && !contractData.pihak1.alamat) {
-                contractData.pihak1.alamat = address;
-              } else if (index === 1 && !contractData.pihak2.alamat) {
-                contractData.pihak2.alamat = address;
-              }
-            }
-          });
-        }
-
-        // Phone numbers
-        const phoneMatches = section.match(/(?:phone|telephone|telp|hp)[\s:]*(?:\+62|62|0)[\d\-\s]{8,15}/gi);
-        if (phoneMatches) {
-          phoneMatches.forEach((match, index) => {
-            const phone = match.replace(/^(?:phone|telephone|telp|hp)[\s:]*/i, '').trim();
-            if (phone) {
-              if (index === 0 && !contractData.pihak1.nomorTelp) {
-                contractData.pihak1.nomorTelp = phone;
-              } else if (index === 1 && !contractData.pihak2.nomorTelp) {
-                contractData.pihak2.nomorTelp = phone;
-              }
-            }
-          });
-        }
-
-        // Emails
-        const emailMatches = section.match(/[\w.-]+@[\w.-]+\.[a-zA-Z]{2,}/g);
-        if (emailMatches) {
-          emailMatches.forEach((email, index) => {
-            if (index === 0 && !contractData.pihak1.email) {
-              contractData.pihak1.email = email;
-            } else if (index === 1 && !contractData.pihak2.email) {
-              contractData.pihak2.email = email;
-            }
-          });
-        }
-
-        // NPWP
-        const npwpMatch = section.match(/(?:npwp|tax id)[\s:]*([^\n\r]+)/i);
-        if (npwpMatch) {
-          const npwp = npwpMatch[1].trim().replace(/^[-:\s]+/, '');
-          if (!contractData.pihak1.npwp) {
-            contractData.pihak1.npwp = npwp;
-          }
-        }
-      });
-
-      // Set intelligent defaults based on contract type
+      // Set intelligent defaults if values are empty
       if (!contractData.durasi) {
         contractData.durasi = selectedContractType === 'employment' ? '2 tahun' : '12 bulan';
       }
@@ -465,7 +484,7 @@ export default function CreateContractPage() {
       }
 
       // Enhanced logging
-      console.log('✅ Successfully parsed contract data from AI response');
+      console.log('✅ Successfully parsed semicolon-separated contract data');
       console.log('📋 Extracted data summary:', {
         contractType: selectedContractType,
         nomorKontrak: contractData.nomorKontrak || 'MISSING',
@@ -482,7 +501,7 @@ export default function CreateContractPage() {
       return contractData;
 
     } catch (error) {
-      console.error('❌ Error parsing AI response:', error);
+      console.error('❌ Error parsing semicolon-separated AI response:', error);
       console.error('📄 Raw AI response:', aiResponse);
       
       // Return intelligent fallback based on contract type
@@ -504,6 +523,212 @@ export default function CreateContractPage() {
       };
     }
   }
+  const convertContractDataToEmployment = (contractData: ContractData): EmploymentContractData => {
+    return {
+      // Informasi Umum Perjanjian
+      nomorKontrak: contractData.nomorKontrak || '',
+      judul: contractData.judul || '',
+      jenis: contractData.jenis || 'EMPLOYMENT',
+      tanggalMulai: contractData.tanggalMulai,
+      durasi: contractData.durasi || '',
+      
+      // Identitas Pegawai (from pihak2)
+      namaLengkap: contractData.pihak2.namaPerusahaan || '', // Employee name stored here
+      tempatLahir: '',
+      tanggalLahir: undefined,
+      jenisKelamin: '',
+      alamatLengkap: contractData.pihak2.alamat || '',
+      nomorTelepon: contractData.pihak2.nomorTelp || '',
+      email: contractData.pihak2.email || '',
+      pendidikanTerakhir: '',
+      nomorIdentitas: contractData.pihak2.npwp || '', // ID stored in npwp field
+      jenisIdentitas: '',
+      
+      // Identitas Perusahaan (from pihak1)
+      namaPerusahaan: contractData.pihak1.namaPerusahaan || '',
+      alamatPerusahaan: contractData.pihak1.alamat || '',
+      nomorTeleponPerusahaan: contractData.pihak1.nomorTelp || '',
+      emailPerusahaan: contractData.pihak1.email || '',
+      npwpPerusahaan: contractData.pihak1.npwp || '',
+      namaPimpinan: contractData.pihak1.namaDirektur || '',
+      jabatanPimpinan: 'Direktur',
+      
+      // Detail Pekerjaan
+      posisiJabatan: contractData.jenisLayanan || contractData.pihak2.namaDirektur || '', // Position stored here
+      departemen: '',
+      lokasiKerja: contractData.wilayahOperasional || '',
+      tanggalMulaiKerja: contractData.tanggalMulai,
+      jenisKontrak: contractData.pihak2.nomorUsaha as 'PKWTT' | 'PKWT' | '' || '', // Contract type stored here
+      masaPercobaan: '',
+      deskripsiPekerjaan: contractData.deskripsiLayanan || '',
+      
+      // Jam Kerja & Waktu (from hakKewajiban fields)
+      hariKerja: '',
+      jamKerja: contractData.hakKewajibanPihak1 || '',
+      jamIstirahat: '',
+      jamLembur: contractData.hakKewajibanPihak2 || '',
+      
+      // Kompensasi & Tunjangan
+      gajiPokok: contractData.nominal || '',
+      tunjanganTetap: '',
+      tunjanganVariabel: '',
+      metodePembayaran: contractData.caraPembayaran.bank || '',
+      jadwalPembayaran: contractData.syaratPembayaran || '',
+      
+      // Fasilitas & Benefit
+      bpjs: '',
+      asuransiKesehatan: '',
+      cuti: '',
+      fasilitasLain: '',
+      
+      // Hak & Kewajiban
+      hakPegawai: contractData.hakKewajibanPihak2 || '',
+      kewajibanPegawai: contractData.syaratLayanan || '',
+      hakPerusahaan: contractData.hakKewajibanPihak1 || '',
+      kewajibanPerusahaan: '',
+      
+      // Perlindungan Hukum
+      kerahasiaan: '',
+      nonKompete: '',
+      aturanDisiplin: '',
+      keselamatanKerja: '',
+      perlindunganData: '',
+      sanksiPelanggaran: contractData.dendaKeterlambatan || '',
+      prosedurPenyelesaianSengketa: contractData.penyelesaianSengketa || '',
+      masaNotice: contractData.batasWaktuKlaim || '',
+      pesangonPHK: contractData.maksimalKompensasi || ''
+    }
+  }
+  const parseAIResponseToEmploymentData = (aiResponse: string): EmploymentContractData => {
+  try {
+    console.log('📊 Parsing AI response for employment contract...');
+    
+    const extractValue = (text: string, key: string): string => {
+      const regex = new RegExp(`${key}\\s*:\\s*([^;]+);?`, 'i');
+      const match = text.match(regex);
+      if (match && match[1]) {
+        const value = match[1].trim();
+        return value === 'Not specified in document' ? '' : value;
+      }
+      return '';
+    };
+
+    const parseDate = (dateStr: string): Date | undefined => {
+      if (!dateStr || dateStr === 'Not specified in document') return undefined;
+      try {
+        const parts = dateStr.split('/');
+        if (parts.length === 3) {
+          const day = parseInt(parts[0]);
+          const month = parseInt(parts[1]) - 1;
+          const year = parseInt(parts[2]);
+          return new Date(year, month, day);
+        }
+        return new Date(dateStr);
+      } catch {
+        return undefined;
+      }
+    };
+
+    return {
+      // Informasi Umum Perjanjian
+      nomorKontrak: extractValue(aiResponse, 'CONTRACT_NUMBER') || `PKK-${new Date().getFullYear()}-${Math.floor(Math.random() * 1000).toString().padStart(3, '0')}`,
+      judul: extractValue(aiResponse, 'CONTRACT_TITLE') || 'Kontrak Kerja',
+      jenis: extractValue(aiResponse, 'EMPLOYMENT_TYPE') || 'EMPLOYMENT',
+      tanggalMulai: parseDate(extractValue(aiResponse, 'START_DATE')),
+      durasi: extractValue(aiResponse, 'DURATION') || '2 tahun',
+      
+      // Identitas Pegawai
+      namaLengkap: extractValue(aiResponse, 'EMPLOYEE_NAME'),
+      tempatLahir: '',
+      tanggalLahir: undefined,
+      jenisKelamin: extractValue(aiResponse, 'EMPLOYEE_GENDER') as 'L' | 'P' | '' || '',
+      alamatLengkap: extractValue(aiResponse, 'EMPLOYEE_ADDRESS'),
+      nomorTelepon: extractValue(aiResponse, 'EMPLOYEE_PHONE'),
+      email: extractValue(aiResponse, 'EMPLOYEE_EMAIL'),
+      pendidikanTerakhir: '',
+      nomorIdentitas: extractValue(aiResponse, 'EMPLOYEE_ID'),
+      jenisIdentitas: 'KTP',
+      
+      // Identitas Perusahaan
+      namaPerusahaan: extractValue(aiResponse, 'COMPANY_NAME'),
+      alamatPerusahaan: extractValue(aiResponse, 'COMPANY_ADDRESS'),
+      nomorTeleponPerusahaan: extractValue(aiResponse, 'COMPANY_PHONE'),
+      emailPerusahaan: extractValue(aiResponse, 'COMPANY_EMAIL'),
+      npwpPerusahaan: extractValue(aiResponse, 'COMPANY_NPWP'),
+      namaPimpinan: extractValue(aiResponse, 'COMPANY_DIRECTOR'),
+      jabatanPimpinan: 'Direktur',
+      
+      // Detail Pekerjaan
+      posisiJabatan: extractValue(aiResponse, 'EMPLOYEE_POSITION'),
+      departemen: '',
+      lokasiKerja: extractValue(aiResponse, 'WORK_LOCATION'),
+      tanggalMulaiKerja: parseDate(extractValue(aiResponse, 'START_DATE')),
+      jenisKontrak: extractValue(aiResponse, 'CONTRACT_TYPE') as 'PKWTT' | 'PKWT' | '' || '',
+      masaPercobaan: extractValue(aiResponse, 'PROBATION_PERIOD'),
+      deskripsiPekerjaan: extractValue(aiResponse, 'JOB_DESCRIPTION'),
+      
+      // Jam Kerja & Waktu
+      hariKerja: '',
+      jamKerja: extractValue(aiResponse, 'WORK_SCHEDULE'),
+      jamIstirahat: extractValue(aiResponse, 'BREAK_TIME'),
+      jamLembur: extractValue(aiResponse, 'OVERTIME_POLICY'),
+      
+      // Kompensasi & Tunjangan
+      gajiPokok: extractValue(aiResponse, 'BASIC_SALARY'),
+      tunjanganTetap: extractValue(aiResponse, 'FIXED_ALLOWANCES'),
+      tunjanganVariabel: extractValue(aiResponse, 'VARIABLE_ALLOWANCES'),
+      metodePembayaran: '',
+      jadwalPembayaran: extractValue(aiResponse, 'PAYMENT_SCHEDULE'),
+      
+      // Fasilitas & Benefit
+      bpjs: extractValue(aiResponse, 'SOCIAL_SECURITY'),
+      asuransiKesehatan: extractValue(aiResponse, 'HEALTH_INSURANCE'),
+      cuti: extractValue(aiResponse, 'LEAVE_POLICY'),
+      fasilitasLain: extractValue(aiResponse, 'OTHER_BENEFITS'),
+      
+      // Hak & Kewajiban
+      hakPegawai: '',
+      kewajibanPegawai: '',
+      hakPerusahaan: '',
+      kewajibanPerusahaan: '',
+      
+      // Perlindungan Hukum
+      kerahasiaan: extractValue(aiResponse, 'CONFIDENTIALITY'),
+      nonKompete: extractValue(aiResponse, 'NON_COMPETE'),
+      aturanDisiplin: extractValue(aiResponse, 'DISCIPLINARY_RULES'),
+      keselamatanKerja: '',
+      perlindunganData: '',
+      sanksiPelanggaran: '',
+      prosedurPenyelesaianSengketa: extractValue(aiResponse, 'DISPUTE_RESOLUTION'),
+      masaNotice: extractValue(aiResponse, 'NOTICE_PERIOD'),
+      pesangonPHK: extractValue(aiResponse, 'SEVERANCE_PAY')
+    };
+
+  } catch (error) {
+    console.error('❌ Error parsing employment contract data:', error);
+    
+    // Return default employment contract structure
+    return {
+      nomorKontrak: `PKK-${new Date().getFullYear()}-${Math.floor(Math.random() * 1000).toString().padStart(3, '0')}`,
+      judul: 'Kontrak Kerja',
+      jenis: 'EMPLOYMENT',
+      tanggalMulai: new Date(),
+      durasi: '2 tahun',
+      namaLengkap: '', tempatLahir: '', tanggalLahir: undefined, jenisKelamin: '', alamatLengkap: '',
+      nomorTelepon: '', email: '', pendidikanTerakhir: '', nomorIdentitas: '', jenisIdentitas: '',
+      namaPerusahaan: '', alamatPerusahaan: '', nomorTeleponPerusahaan: '', emailPerusahaan: '',
+      npwpPerusahaan: '', namaPimpinan: '', jabatanPimpinan: '', posisiJabatan: '', departemen: '',
+      lokasiKerja: '', tanggalMulaiKerja: undefined, jenisKontrak: '', masaPercobaan: '',
+      deskripsiPekerjaan: '', hariKerja: '', jamKerja: '', jamIstirahat: '', jamLembur: '',
+      gajiPokok: '', tunjanganTetap: '', tunjanganVariabel: '', metodePembayaran: '',
+      jadwalPembayaran: '', bpjs: '', asuransiKesehatan: '', cuti: '', fasilitasLain: '',
+      hakPegawai: '', kewajibanPegawai: '', hakPerusahaan: '', kewajibanPerusahaan: '',
+      kerahasiaan: '', nonKompete: '', aturanDisiplin: '', keselamatanKerja: '',
+      perlindunganData: '', sanksiPelanggaran: '', prosedurPenyelesaianSengketa: '',
+      masaNotice: '', pesangonPHK: ''
+    };
+  }
+}
   // Jika belum memilih tipe kontrak atau metode input, atau sedang upload, tampilkan pilihan
   if (!selectedContractType || !selectedInputMethod || (selectedInputMethod === 'upload' && !uploadedFile)) {
     return (
@@ -903,6 +1128,7 @@ export default function CreateContractPage() {
               setScanProgress(0)
               setScanError(null)
               setExtractedData(null)
+              setExtractedEmploymentData(null)
             }}
             className="mb-4"
           >
@@ -912,11 +1138,10 @@ export default function CreateContractPage() {
         <EmploymentPage 
           initialInputMethod={selectedInputMethod}
           initialFile={uploadedFile}
-          initialExtractedData={extractedData} // Pass the AI-extracted data
+          initialExtractedData={extractedEmploymentData} // Pass the AI-extracted data
         />
       </div>
     )
   }
-
   return null
 }
