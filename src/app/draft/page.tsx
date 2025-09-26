@@ -1,229 +1,702 @@
-"use client";
+'use client'
 
-import { useState } from "react";
-import { Button } from "@/components/ui/button";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardFooter,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import { Calendar } from "@/components/ui/calendar";
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover";
-import {
-  Calendar as CalendarIcon,
-  FileText,
-  Briefcase,
-  Users,
-  Settings,
-  PlusCircle,
-  LayoutDashboard,
-} from "lucide-react";
-import { format } from "date-fns";
+import React, { useState } from 'react'
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
+import { Textarea } from '@/components/ui/textarea'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import { Calendar } from '@/components/ui/calendar'
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
+import { CalendarIcon, Upload, FileText, Users } from 'lucide-react'
+import { format } from 'date-fns'
 
-export default function DraftsPage() {
-  const [contractType, setContractType] = useState("employment");
-  const [effectiveDate, setEffectiveDate] = useState<Date>();
+interface ContractData {
+  // Informasi Umum
+  nomorKontrak: string
+  judul: string
+  jenis: string
+  tanggalMulai: Date | undefined
+  durasi: string
+  
+  // Pihak Pertama
+  pihak1: {
+    namaPerusahaan: string
+    namaDirektur: string
+    alamat: string
+    nomorTelp: string
+    email: string
+    npwp: string
+    nomorUsaha: string
+  }
+  
+  // Pihak Kedua
+  pihak2: {
+    namaPerusahaan: string
+    namaDirektur: string
+    alamat: string
+    nomorTelp: string
+    email: string
+    npwp: string
+    nomorUsaha: string
+  }
+  
+  // Ruang Lingkup
+  jenisLayanan: string
+  deskripsiLayanan: string
+  wilayahOperasional: string
+  hakKewajibanPihak1: string
+  hakKewajibanPihak2: string
+  syaratLayanan: string
+  
+  // Administrasi Keuangan
+  nominal: string
+  syaratPembayaran: string
+  caraPembayaran: {
+    bank: string
+    nama: string
+    norek: string
+  }
+  jangkaWaktuPembayaran: string
+  dendaKeterlambatan: string
+  
+  // Klaim dan Sengketa
+  batasWaktuKlaim: string
+  maksimalKompensasi: string
+  penyelesaianSengketa: string
+  forceMajeure: string
+}
+
+export default function DraftPage() {
+  const [currentStep, setCurrentStep] = useState(0)
+  const [inputMethod, setInputMethod] = useState<'manual' | 'upload' | null>(null)
+  const [contractData, setContractData] = useState<ContractData>({
+    nomorKontrak: '',
+    judul: '',
+    jenis: 'PARTNERSHIP',
+    tanggalMulai: undefined,
+    durasi: '',
+    pihak1: {
+      namaPerusahaan: '',
+      namaDirektur: '',
+      alamat: '',
+      nomorTelp: '',
+      email: '',
+      npwp: '',
+      nomorUsaha: ''
+    },
+    pihak2: {
+      namaPerusahaan: '',
+      namaDirektur: '',
+      alamat: '',
+      nomorTelp: '',
+      email: '',
+      npwp: '',
+      nomorUsaha: ''
+    },
+    jenisLayanan: '',
+    deskripsiLayanan: '',
+    wilayahOperasional: '',
+    hakKewajibanPihak1: '',
+    hakKewajibanPihak2: '',
+    syaratLayanan: '',
+    nominal: '',
+    syaratPembayaran: '',
+    caraPembayaran: {
+      bank: '',
+      nama: '',
+      norek: ''
+    },
+    jangkaWaktuPembayaran: '',
+    dendaKeterlambatan: '',
+    batasWaktuKlaim: '',
+    maksimalKompensasi: '',
+    penyelesaianSengketa: '',
+    forceMajeure: ''
+  })
+
+  const steps = [
+    'Pilih Metode Input',
+    'Informasi Umum',
+    'Identitas Para Pihak',
+    'Ruang Lingkup',
+    'Administrasi Keuangan',
+    'Klaim & Sengketa'
+  ]
+
+  const handleInputChange = (field: string, value: any, section?: string) => {
+    if (section) {
+      setContractData(prev => ({
+        ...prev,
+        [section]: {
+          ...(prev[section as keyof ContractData] as any),
+          [field]: value
+        }
+      }))
+    } else {
+      setContractData(prev => ({
+        ...prev,
+        [field]: value
+      }))
+    }
+  }
+
+  const nextStep = () => {
+    if (currentStep < steps.length - 1) {
+      setCurrentStep(currentStep + 1)
+    }
+  }
+
+  const prevStep = () => {
+    if (currentStep > 0) {
+      setCurrentStep(currentStep - 1)
+    }
+  }
 
   return (
-    <div className="grid min-h-screen w-full lg:grid-cols-[280px_1fr] border-r bg-gray-100/40 lg:block dark:bg-gray-800/40">
-      <div className="flex flex-col w-full">
-        <header className="flex h-14 lg:h-[60px] items-center gap-4 border-b bg-gray-100/40 px-6 dark:bg-gray-800/40">
-          <div className="flex-1">
-            <h1 className="text-lg font-semibold md:text-2xl">
-              Create Contract
-            </h1>
-          </div>
-          <div className="flex flex-1 items-center justify-end gap-2">
-            <Button variant="outline">Cancel</Button>
-            <Button>Create Contract</Button>
-          </div>
-        </header>
-
-        <main className="flex-1 p-4 md:p-6">
-          <Tabs defaultValue="main" className="w-full">
-            <TabsList className="grid w-full grid-cols-4 md:w-auto md:inline-flex">
-              <TabsTrigger value="employment">Employment</TabsTrigger>
-              <TabsTrigger value="partnership">Partnership</TabsTrigger>
-            </TabsList>
-
-            {/* Main Tab Content */}
-            <TabsContent value="employment" className="mt-4">
-              <Card>
-                <CardHeader>
-                  <CardTitle>Contract Details</CardTitle>
-                  <CardDescription>
-                    Fill in the main details of the contract below.
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    {/* Kolom Kiri */}
-                    <div className="space-y-4">
-                      <div>
-                        <Label htmlFor="contract-number">Contract Number</Label>
-                        <Input id="contract-number" defaultValue="SI9718" />
-                      </div>
-                      <div>
-                        <Label htmlFor="contract-type">Contract Type</Label>
-                        <Select
-                          onValueChange={setContractType}
-                          defaultValue={contractType}
-                        >
-                          <SelectTrigger>
-                            <SelectValue placeholder="Select Contract Type" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="employment">
-                              Employment
-                            </SelectItem>
-                            <SelectItem value="partnership">
-                              Partnership
-                            </SelectItem>
-                          </SelectContent>
-                        </Select>
-                      </div>
-                      <div>
-                        <Label htmlFor="contract-owner">Contract Owner</Label>
-                        <Input id="contract-owner" defaultValue="Anne Hertz" />
-                      </div>
-                      <div>
-                        <Label htmlFor="effective-date">Effective Date</Label>
-                        <Popover>
-                          <PopoverTrigger asChild>
-                            <Button
-                              variant="outline"
-                              className="w-full justify-start text-left font-normal"
-                            >
-                              <CalendarIcon className="mr-2 h-4 w-4" />
-                              {effectiveDate ? (
-                                format(effectiveDate, "PPP")
-                              ) : (
-                                <span>Pick a date</span>
-                              )}
-                            </Button>
-                          </PopoverTrigger>
-                          <PopoverContent className="w-auto p-0" align="start">
-                            <Calendar
-                              mode="single"
-                              selected={effectiveDate}
-                              onSelect={setEffectiveDate}
-                            />
-                          </PopoverContent>
-                        </Popover>
-                      </div>
-                    </div>
-
-                    {/* Kolom Kanan */}
-                    <div className="space-y-4">
-                      <div>
-                        <Label htmlFor="contract-title">Contract Title</Label>
-                        <Input
-                          id="contract-title"
-                          placeholder="e.g. Senior Software Engineer Agreement"
-                        />
-                      </div>
-                      <div>
-                        <Label htmlFor="department">Department</Label>
-                        <Input
-                          id="department"
-                          defaultValue="Business Development"
-                        />
-                      </div>
-                      <div>
-                        <Label htmlFor="contracting-parties">
-                          Contracting Parties
-                        </Label>
-                        <div className="flex items-center gap-2">
-                          <Input
-                            id="contracting-parties"
-                            placeholder="Select or Add New Parties"
-                            className="flex-grow"
-                          />
-                          <Button type="button" size="icon" variant="outline">
-                            <PlusCircle className="h-4 w-4" />
-                          </Button>
-                        </div>
-                      </div>
-                      <div>
-                        <Label htmlFor="description">Description</Label>
-                        {/* Menggunakan Textarea untuk deskripsi */}
-                        <Textarea
-                          id="description"
-                          placeholder="Enter a brief description of the contract"
-                          rows={3}
-                        />
-                      </div>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            </TabsContent>
-
-            {/* Placeholder untuk Tab Lain */}
-            <TabsContent value="custom" className="mt-4">
-              <Card>
-                <CardHeader>
-                  <CardTitle>Custom Fields</CardTitle>
-                  <CardDescription>
-                    Add custom fields specific to this contract type.
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <p className="text-sm text-muted-foreground">
-                    Custom fields will appear here.
-                  </p>
-                </CardContent>
-              </Card>
-            </TabsContent>
-            <TabsContent value="documents" className="mt-4">
-              <Card>
-                <CardHeader>
-                  <CardTitle>Documents</CardTitle>
-                  <CardDescription>
-                    Upload and manage documents related to this contract.
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <p className="text-sm text-muted-foreground">
-                    Document upload functionality will be here.
-                  </p>
-                </CardContent>
-              </Card>
-            </TabsContent>
-            <TabsContent value="notes" className="mt-4">
-              <Card>
-                <CardHeader>
-                  <CardTitle>Notes</CardTitle>
-                  <CardDescription>
-                    Add internal notes for your team.
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <Textarea placeholder="Type your notes here..." />
-                </CardContent>
-              </Card>
-            </TabsContent>
-          </Tabs>
-        </main>
+    <div className="container mx-auto p-6 max-w-4xl">
+      <div className="mb-8">
+        <h1 className="text-3xl font-bold text-gray-900 mb-2">Draft Kontrak Partnership</h1>
+        <p className="text-gray-600">Buat kontrak partnership dengan mudah dan lengkap</p>
       </div>
+
+      {/* Progress Steps */}
+      <div className="mb-8">
+        <div className="flex items-center justify-between">
+          {steps.map((step, index) => (
+            <div key={index} className="flex items-center">
+              <div className={`
+                w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium
+                ${index <= currentStep 
+                  ? 'bg-blue-600 text-white' 
+                  : 'bg-gray-200 text-gray-600'
+                }
+              `}>
+                {index + 1}
+              </div>
+              <span className={`ml-2 text-sm ${index <= currentStep ? 'text-blue-600' : 'text-gray-500'}`}>
+                {step}
+              </span>
+              {index < steps.length - 1 && (
+                <div className={`w-8 h-0.5 mx-4 ${index < currentStep ? 'bg-blue-600' : 'bg-gray-200'}`} />
+              )}
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* Step Content */}
+      <Card>
+        <CardHeader>
+          <CardTitle>{steps[currentStep]}</CardTitle>
+          <CardDescription>
+            {currentStep === 0 && "Pilih cara mengisi kontrak"}
+            {currentStep === 1 && "Masukkan informasi dasar kontrak"}
+            {currentStep === 2 && "Data lengkap kedua belah pihak"}
+            {currentStep === 3 && "Ruang lingkup dan ketentuan layanan"}
+            {currentStep === 4 && "Detail keuangan dan pembayaran"}
+            {currentStep === 5 && "Aturan klaim dan penyelesaian sengketa"}
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          {/* Step 0: Pilih Metode Input */}
+          {currentStep === 0 && (
+            <div className="space-y-6">
+              <div className="text-center mb-6">
+                <h3 className="text-lg font-semibold mb-4">Pilih Tipe Kontrak</h3>
+                <Select value={contractData.jenis} onValueChange={(value) => handleInputChange('jenis', value)}>
+                  <SelectTrigger className="w-full max-w-md mx-auto">
+                    <SelectValue placeholder="Pilih tipe kontrak" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="PARTNERSHIP">Partnership</SelectItem>
+                    <SelectItem value="EMPLOYMENT">Employment</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="grid md:grid-cols-2 gap-6">
+                <Card 
+                  className={`cursor-pointer border-2 ${inputMethod === 'manual' ? 'border-blue-500 bg-blue-50' : 'border-gray-200'}`}
+                  onClick={() => setInputMethod('manual')}
+                >
+                  <CardContent className="p-6 text-center">
+                    <FileText className="w-12 h-12 mx-auto mb-4 text-blue-600" />
+                    <h3 className="font-semibold text-lg mb-2">Isi Manual</h3>
+                    <p className="text-gray-600">Isi form secara manual langkah demi langkah</p>
+                  </CardContent>
+                </Card>
+
+                <Card 
+                  className={`cursor-pointer border-2 ${inputMethod === 'upload' ? 'border-blue-500 bg-blue-50' : 'border-gray-200'}`}
+                  onClick={() => setInputMethod('upload')}
+                >
+                  <CardContent className="p-6 text-center">
+                    <Upload className="w-12 h-12 mx-auto mb-4 text-blue-600" />
+                    <h3 className="font-semibold text-lg mb-2">Upload Dokumen</h3>
+                    <p className="text-gray-600">Upload dokumen yang sudah ada untuk dianalisis</p>
+                  </CardContent>
+                </Card>
+              </div>
+
+              {inputMethod === 'upload' && (
+                <div className="mt-6 p-4 border-2 border-dashed border-gray-300 rounded-lg text-center">
+                  <Upload className="w-8 h-8 mx-auto mb-2 text-gray-400" />
+                  <p className="text-gray-600 mb-2">Drag & drop file atau klik untuk browse</p>
+                  <Button variant="outline">Pilih File</Button>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Step 1: Informasi Umum */}
+          {currentStep === 1 && (
+            <div className="space-y-6">
+              <div className="grid md:grid-cols-2 gap-6">
+                <div>
+                  <Label htmlFor="nomorKontrak">Nomor Kontrak</Label>
+                  <Input 
+                    id="nomorKontrak"
+                    value={contractData.nomorKontrak}
+                    onChange={(e) => handleInputChange('nomorKontrak', e.target.value)}
+                    placeholder="Masukkan nomor kontrak"
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="jenis">Jenis Kontrak</Label>
+                  <Select value={contractData.jenis} onValueChange={(value) => handleInputChange('jenis', value)}>
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="PARTNERSHIP">Partnership</SelectItem>
+                      <SelectItem value="VENDOR">Vendor</SelectItem>
+                      <SelectItem value="SERVICE">Service Agreement</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+
+              <div>
+                <Label htmlFor="judul">Judul Kontrak</Label>
+                <Input 
+                  id="judul"
+                  value={contractData.judul}
+                  onChange={(e) => handleInputChange('judul', e.target.value)}
+                  placeholder="Masukkan judul kontrak"
+                />
+              </div>
+
+              <div className="grid md:grid-cols-2 gap-6">
+                <div>
+                  <Label>Tanggal Mulai</Label>
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <Button variant="outline" className="w-full justify-start text-left font-normal">
+                        <CalendarIcon className="mr-2 h-4 w-4" />
+                        {contractData.tanggalMulai ? format(contractData.tanggalMulai, "dd/MM/yyyy") : "Pilih tanggal"}
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-auto p-0">
+                      <Calendar
+                        mode="single"
+                        selected={contractData.tanggalMulai}
+                        onSelect={(date) => handleInputChange('tanggalMulai', date)}
+                      />
+                    </PopoverContent>
+                  </Popover>
+                </div>
+                <div>
+                  <Label htmlFor="durasi">Durasi Perjanjian</Label>
+                  <Input 
+                    id="durasi"
+                    value={contractData.durasi}
+                    onChange={(e) => handleInputChange('durasi', e.target.value)}
+                    placeholder="Contoh: 12 bulan"
+                  />
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Step 2: Identitas Para Pihak */}
+          {currentStep === 2 && (
+            <Tabs defaultValue="pihak1" className="w-full">
+              <TabsList className="grid w-full grid-cols-2">
+                <TabsTrigger value="pihak1">Pihak Pertama</TabsTrigger>
+                <TabsTrigger value="pihak2">Pihak Kedua</TabsTrigger>
+              </TabsList>
+              
+              <TabsContent value="pihak1" className="space-y-6">
+                <div className="grid md:grid-cols-2 gap-6">
+                  <div>
+                    <Label htmlFor="namaPerusahaan1">Nama Perusahaan</Label>
+                    <Input 
+                      id="namaPerusahaan1"
+                      value={contractData.pihak1.namaPerusahaan}
+                      onChange={(e) => handleInputChange('namaPerusahaan', e.target.value, 'pihak1')}
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="namaDirektur1">Nama Direktur</Label>
+                    <Input 
+                      id="namaDirektur1"
+                      value={contractData.pihak1.namaDirektur}
+                      onChange={(e) => handleInputChange('namaDirektur', e.target.value, 'pihak1')}
+                    />
+                  </div>
+                </div>
+                
+                <div>
+                  <Label htmlFor="alamat1">Alamat Perusahaan</Label>
+                  <Textarea 
+                    id="alamat1"
+                    value={contractData.pihak1.alamat}
+                    onChange={(e) => handleInputChange('alamat', e.target.value, 'pihak1')}
+                    rows={3}
+                  />
+                </div>
+
+                <div className="grid md:grid-cols-2 gap-6">
+                  <div>
+                    <Label htmlFor="nomorTelp1">Nomor Telepon</Label>
+                    <Input 
+                      id="nomorTelp1"
+                      value={contractData.pihak1.nomorTelp}
+                      onChange={(e) => handleInputChange('nomorTelp', e.target.value, 'pihak1')}
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="email1">Email</Label>
+                    <Input 
+                      id="email1"
+                      type="email"
+                      value={contractData.pihak1.email}
+                      onChange={(e) => handleInputChange('email', e.target.value, 'pihak1')}
+                    />
+                  </div>
+                </div>
+
+                <div className="grid md:grid-cols-2 gap-6">
+                  <div>
+                    <Label htmlFor="npwp1">NPWP</Label>
+                    <Input 
+                      id="npwp1"
+                      value={contractData.pihak1.npwp}
+                      onChange={(e) => handleInputChange('npwp', e.target.value, 'pihak1')}
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="nomorUsaha1">Nomor Usaha</Label>
+                    <Input 
+                      id="nomorUsaha1"
+                      value={contractData.pihak1.nomorUsaha}
+                      onChange={(e) => handleInputChange('nomorUsaha', e.target.value, 'pihak1')}
+                    />
+                  </div>
+                </div>
+              </TabsContent>
+
+              <TabsContent value="pihak2" className="space-y-6">
+                <div className="grid md:grid-cols-2 gap-6">
+                  <div>
+                    <Label htmlFor="namaPerusahaan2">Nama Perusahaan</Label>
+                    <Input 
+                      id="namaPerusahaan2"
+                      value={contractData.pihak2.namaPerusahaan}
+                      onChange={(e) => handleInputChange('namaPerusahaan', e.target.value, 'pihak2')}
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="namaDirektur2">Nama Direktur</Label>
+                    <Input 
+                      id="namaDirektur2"
+                      value={contractData.pihak2.namaDirektur}
+                      onChange={(e) => handleInputChange('namaDirektur', e.target.value, 'pihak2')}
+                    />
+                  </div>
+                </div>
+                
+                <div>
+                  <Label htmlFor="alamat2">Alamat Perusahaan</Label>
+                  <Textarea 
+                    id="alamat2"
+                    value={contractData.pihak2.alamat}
+                    onChange={(e) => handleInputChange('alamat', e.target.value, 'pihak2')}
+                    rows={3}
+                  />
+                </div>
+
+                <div className="grid md:grid-cols-2 gap-6">
+                  <div>
+                    <Label htmlFor="nomorTelp2">Nomor Telepon</Label>
+                    <Input 
+                      id="nomorTelp2"
+                      value={contractData.pihak2.nomorTelp}
+                      onChange={(e) => handleInputChange('nomorTelp', e.target.value, 'pihak2')}
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="email2">Email</Label>
+                    <Input 
+                      id="email2"
+                      type="email"
+                      value={contractData.pihak2.email}
+                      onChange={(e) => handleInputChange('email', e.target.value, 'pihak2')}
+                    />
+                  </div>
+                </div>
+
+                <div className="grid md:grid-cols-2 gap-6">
+                  <div>
+                    <Label htmlFor="npwp2">NPWP</Label>
+                    <Input 
+                      id="npwp2"
+                      value={contractData.pihak2.npwp}
+                      onChange={(e) => handleInputChange('npwp', e.target.value, 'pihak2')}
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="nomorUsaha2">Nomor Usaha</Label>
+                    <Input 
+                      id="nomorUsaha2"
+                      value={contractData.pihak2.nomorUsaha}
+                      onChange={(e) => handleInputChange('nomorUsaha', e.target.value, 'pihak2')}
+                    />
+                  </div>
+                </div>
+              </TabsContent>
+            </Tabs>
+          )}
+
+          {/* Step 3: Ruang Lingkup */}
+          {currentStep === 3 && (
+            <div className="space-y-6">
+              <div className="grid md:grid-cols-2 gap-6">
+                <div>
+                  <Label htmlFor="jenisLayanan">Jenis Layanan</Label>
+                  <Input 
+                    id="jenisLayanan"
+                    value={contractData.jenisLayanan}
+                    onChange={(e) => handleInputChange('jenisLayanan', e.target.value)}
+                    placeholder="Contoh: Jasa Konsultasi IT"
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="wilayahOperasional">Wilayah Operasional</Label>
+                  <Input 
+                    id="wilayahOperasional"
+                    value={contractData.wilayahOperasional}
+                    onChange={(e) => handleInputChange('wilayahOperasional', e.target.value)}
+                    placeholder="Contoh: Jakarta, Indonesia"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <Label htmlFor="deskripsiLayanan">Deskripsi Layanan (Jenis Barang/Layanan)</Label>
+                <Textarea 
+                  id="deskripsiLayanan"
+                  value={contractData.deskripsiLayanan}
+                  onChange={(e) => handleInputChange('deskripsiLayanan', e.target.value)}
+                  rows={4}
+                  placeholder="Jelaskan secara detail layanan atau barang yang akan disediakan..."
+                />
+              </div>
+
+              <div>
+                <Label htmlFor="hakKewajibanPihak1">Hak dan Kewajiban Pihak Pertama</Label>
+                <Textarea 
+                  id="hakKewajibanPihak1"
+                  value={contractData.hakKewajibanPihak1}
+                  onChange={(e) => handleInputChange('hakKewajibanPihak1', e.target.value)}
+                  rows={4}
+                  placeholder="Sebutkan hak dan kewajiban pihak pertama..."
+                />
+              </div>
+
+              <div>
+                <Label htmlFor="hakKewajibanPihak2">Hak dan Kewajiban Pihak Kedua</Label>
+                <Textarea 
+                  id="hakKewajibanPihak2"
+                  value={contractData.hakKewajibanPihak2}
+                  onChange={(e) => handleInputChange('hakKewajibanPihak2', e.target.value)}
+                  rows={4}
+                  placeholder="Sebutkan hak dan kewajiban pihak kedua..."
+                />
+              </div>
+
+              <div>
+                <Label htmlFor="syaratLayanan">Syarat Layanan</Label>
+                <Textarea 
+                  id="syaratLayanan"
+                  value={contractData.syaratLayanan}
+                  onChange={(e) => handleInputChange('syaratLayanan', e.target.value)}
+                  rows={3}
+                  placeholder="Sebutkan syarat-syarat khusus layanan..."
+                />
+              </div>
+            </div>
+          )}
+
+          {/* Step 4: Administrasi Keuangan */}
+          {currentStep === 4 && (
+            <div className="space-y-6">
+              <div className="grid md:grid-cols-2 gap-6">
+                <div>
+                  <Label htmlFor="nominal">Nominal Kontrak</Label>
+                  <Input 
+                    id="nominal"
+                    value={contractData.nominal}
+                    onChange={(e) => handleInputChange('nominal', e.target.value)}
+                    placeholder="Contoh: Rp 100.000.000"
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="jangkaWaktuPembayaran">Jangka Waktu Pembayaran</Label>
+                  <Input 
+                    id="jangkaWaktuPembayaran"
+                    value={contractData.jangkaWaktuPembayaran}
+                    onChange={(e) => handleInputChange('jangkaWaktuPembayaran', e.target.value)}
+                    placeholder="Contoh: 30 hari"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <Label htmlFor="syaratPembayaran">Syarat Pembayaran</Label>
+                <Textarea 
+                  id="syaratPembayaran"
+                  value={contractData.syaratPembayaran}
+                  onChange={(e) => handleInputChange('syaratPembayaran', e.target.value)}
+                  rows={3}
+                  placeholder="Jelaskan syarat pembayaran (pelunasan, invoice rilis kapan, pajak, dll)..."
+                />
+              </div>
+
+              <div className="space-y-4">
+                <h4 className="font-semibold text-lg">Cara Pembayaran</h4>
+                <div className="grid md:grid-cols-3 gap-4">
+                  <div>
+                    <Label htmlFor="bank">Bank</Label>
+                    <Input 
+                      id="bank"
+                      value={contractData.caraPembayaran.bank}
+                      onChange={(e) => handleInputChange('bank', e.target.value, 'caraPembayaran')}
+                      placeholder="Contoh: BCA"
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="namaRekening">Nama Rekening</Label>
+                    <Input 
+                      id="namaRekening"
+                      value={contractData.caraPembayaran.nama}
+                      onChange={(e) => handleInputChange('nama', e.target.value, 'caraPembayaran')}
+                      placeholder="Nama pemilik rekening"
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="norek">Nomor Rekening</Label>
+                    <Input 
+                      id="norek"
+                      value={contractData.caraPembayaran.norek}
+                      onChange={(e) => handleInputChange('norek', e.target.value, 'caraPembayaran')}
+                      placeholder="Nomor rekening"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              <div>
+                <Label htmlFor="dendaKeterlambatan">Denda Keterlambatan</Label>
+                <Textarea 
+                  id="dendaKeterlambatan"
+                  value={contractData.dendaKeterlambatan}
+                  onChange={(e) => handleInputChange('dendaKeterlambatan', e.target.value)}
+                  rows={3}
+                  placeholder="Jelaskan aturan denda keterlambatan pembayaran..."
+                />
+              </div>
+            </div>
+          )}
+
+          {/* Step 5: Klaim dan Sengketa */}
+          {currentStep === 5 && (
+            <div className="space-y-6">
+              <div className="grid md:grid-cols-2 gap-6">
+                <div>
+                  <Label htmlFor="batasWaktuKlaim">Batas Waktu Klaim</Label>
+                  <Input 
+                    id="batasWaktuKlaim"
+                    value={contractData.batasWaktuKlaim}
+                    onChange={(e) => handleInputChange('batasWaktuKlaim', e.target.value)}
+                    placeholder="Contoh: 14 hari"
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="maksimalKompensasi">Maksimal Kompensasi</Label>
+                  <Input 
+                    id="maksimalKompensasi"
+                    value={contractData.maksimalKompensasi}
+                    onChange={(e) => handleInputChange('maksimalKompensasi', e.target.value)}
+                    placeholder="Contoh: 50% dari nilai kontrak"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <Label htmlFor="penyelesaianSengketa">Penyelesaian Sengketa</Label>
+                <Textarea 
+                  id="penyelesaianSengketa"
+                  value={contractData.penyelesaianSengketa}
+                  onChange={(e) => handleInputChange('penyelesaianSengketa', e.target.value)}
+                  rows={4}
+                  placeholder="Jelaskan mekanisme penyelesaian sengketa (mediasi, arbitrase, pengadilan, dll)..."
+                />
+              </div>
+
+              <div>
+                <Label htmlFor="forceMajeure">Force Majeure</Label>
+                <Textarea 
+                  id="forceMajeure"
+                  value={contractData.forceMajeure}
+                  onChange={(e) => handleInputChange('forceMajeure', e.target.value)}
+                  rows={4}
+                  placeholder="Jelaskan ketentuan force majeure (bencana alam, pandemi, perang, dll)..."
+                />
+              </div>
+            </div>
+          )}
+
+          {/* Navigation Buttons */}
+          <div className="flex justify-between mt-8 pt-6 border-t">
+            <Button 
+              variant="outline" 
+              onClick={prevStep}
+              disabled={currentStep === 0}
+            >
+              Sebelumnya
+            </Button>
+            
+            <div className="flex gap-2">
+              {currentStep === steps.length - 1 ? (
+                <Button onClick={() => console.log('Generate Contract', contractData)}>
+                  Generate Kontrak
+                </Button>
+              ) : (
+                <Button 
+                  onClick={nextStep}
+                  disabled={currentStep === 0 && !inputMethod}
+                >
+                  Selanjutnya
+                </Button>
+              )}
+            </div>
+          </div>
+        </CardContent>
+      </Card>
     </div>
-  );
+  )
 }
