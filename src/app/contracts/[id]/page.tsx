@@ -70,8 +70,12 @@ export default function ContractViewerPage() {
     router.push(`/contracts/${contractId}/edit`);
   };
 
+  const handleReview = () => {
+    router.push(`/contracts/${contractId}/review`);
+  };
+
   const handleBack = () => {
-    router.back();
+    router.push("/dashboard");
   };
 
   if (isLoading) {
@@ -131,11 +135,22 @@ export default function ContractViewerPage() {
               </p>
             </div>
           </div>
-          <div className="flex gap-2">
-            <Button onClick={handleEdit} className="flex items-center gap-2">
-              <Edit className="h-4 w-4" />
-              Edit Contract
-            </Button>
+          <div className="flex items-center gap-2">
+            <div className="flex gap-2">
+              <Button
+                onClick={handleReview}
+                className="flex items-center gap-2"
+              >
+                <Edit className="h-4 w-4" />
+                Review Contract
+              </Button>
+            </div>
+            <div className="flex gap-2">
+              <Button onClick={handleEdit} className="flex items-center gap-2">
+                <Edit className="h-4 w-4" />
+                Edit Contract
+              </Button>
+            </div>
           </div>
         </div>
       </header>

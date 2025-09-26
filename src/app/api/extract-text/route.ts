@@ -42,14 +42,34 @@ export async function POST(request: Request) {
     const body = await request.json();
     const { fileName } = body;
 
-    if (!fileName) {
+    if (!fileName || typeof fileName !== "string") {
       return NextResponse.json(
         { error: "fileName is required" },
         { status: 400 }
       );
     }
+    // Normalize: remove leading slashes/backslashes so path.resolve/join doesn't treat it as absolute
+    const normalized = fileName.replace(/^[/\\]+/, "");
 
-    const pdfPath = path.resolve("./public", fileName);
+    // Basic traversal protection
+    if (normalized.includes("..")) {
+      return NextResponse.json({ error: "Invalid file path" }, { status: 400 });
+    }
+
+    const pdfPath = path.join(process.cwd(), "public", normalized);
+
+    try {
+      const stat = await fs.stat(pdfPath);
+      if (!stat.isFile()) {
+        return NextResponse.json({ error: "Not a file" }, { status: 400 });
+      }
+    } catch (e) {
+      return NextResponse.json(
+        { error: "PDF not found", path: normalized },
+        { status: 404 }
+      );
+    }
+
     const pdfBuffer = await fs.readFile(pdfPath);
 
     // Use our new helper function to get the text data

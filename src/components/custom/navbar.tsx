@@ -98,7 +98,10 @@ export function Navbar() {
       case "ADMIN":
         return [allNavLinks.dashboard, allNavLinks.register];
       case "HR":
-        return [allNavLinks.dashboard, allNavLinks.create];
+        return [
+          allNavLinks.dashboard,
+          allNavLinks.create,
+        ];
       case "LEGAL":
         return [
           allNavLinks.dashboard,
@@ -136,7 +139,7 @@ export function Navbar() {
   // UI utama setelah komponen terpasang di client
   // UI utama setelah komponen terpasang di client
   return (
-    <header className="px-4 lg:px-6 h-16 w-sc flex items-center border-b bg-[#F8F8FF] dark:bg-gray-950 sticky top-0 z-50">
+    <header className="px-4 lg:px-6 h-16 w-sc flex items-center border-b bg-[#F8F8FF] shadow-[0px_4px_23.399999618530273px_0px_rgba(0,0,0,0.30)] dark:bg-gray-950 sticky top-0 z-50">
       <div className="container mx-auto w-screen flex items-center justify-between">
         {/* BAGIAN KIRI: Menggabungkan Logo dan Navigasi */}
         <div className="flex items-center gap-10">
