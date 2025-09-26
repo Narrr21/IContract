@@ -480,33 +480,26 @@ function ContractReviewerPageContent() {
   };
 
   return (
-    <div className="h-screen w-full flex flex-col p-4 bg-gray-50 dark:bg-gray-950">
-      <header className="mb-4">
+    <div className="min-h-screen w-full flex flex-col bg-white">
+      {/* Header */}
+      <header className="border-b bg-white px-6 py-4 flex-shrink-0">
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-2xl font-bold flex items-center gap-2">
-              <FileText className="h-6 w-6" />
-              Contract Reviewer
+            <h1 className="text-2xl font-bold text-gray-900">
+              Periksa Hukum dan Ketepatan Penulisan Kontrak
             </h1>
-            <p className="text-muted-foreground">
-              Reviewing document: <span className="font-mono">{pdfFile}</span>
-              {contractContent && (
-                <span className="ml-2 text-sm">
-                  ({contractContent.length.toLocaleString()} characters
-                  extracted)
-                </span>
-              )}
-            </p>
-          </div>
-          <div className="flex gap-2">
-            <Button
-              onClick={() => setShowAIPanel(!showAIPanel)}
-              variant="outline"
-              className="flex items-center gap-2"
-            >
-              <Bot className="h-4 w-4" />
-              {showAIPanel ? "Hide" : "Show"} AI Analysis
-            </Button>
+            <div className="flex items-center gap-4 mt-2 text-sm text-gray-600">
+              <span>
+                <strong>Judul Kontrak:</strong> Dibuat pada 1 Januari 2025
+              </span>
+              <Button 
+                size="sm" 
+                variant="outline" 
+                className="text-blue-600 border-blue-200"
+              >
+                Simpan perubahan 🖊️
+              </Button>
+            </div>
           </div>
         </div>
       </header>
@@ -663,119 +656,344 @@ function ContractReviewerPageContent() {
         </Card>
       )}
 
-      <ResizablePanelGroup
-        direction="horizontal"
-        className="flex-1 rounded-lg border"
-      >
-        <ResizablePanel defaultSize={60}>
-          <div className="flex h-full items-start justify-center p-2 overflow-y-auto">
+      {/* Main Content - 3 Panel Layout */}
+      <div className="flex-1 flex min-h-0">
+        {/* Left Panel - Rekomendasi Hukum */}
+        <div className="w-1/3 border-r bg-white flex flex-col">
+          <div className="p-4 border-b flex-shrink-0">
+            <div className="flex items-center justify-between">
+              <h2 className="text-lg font-semibold text-gray-900">Rekomendasi Hukum</h2>
+              <Button
+                onClick={() => setShowAIPanel(!showAIPanel)}
+                variant="outline"
+                size="sm"
+                className="flex items-center gap-2"
+              >
+                <Bot className="h-4 w-4" />
+                {showAIPanel ? "Hide" : "Show"} AI
+              </Button>
+            </div>
+          </div>
+          <div className="flex-1 p-4 space-y-4 overflow-y-auto">
+            
+            {/* AI Analysis Panel */}
+            {showAIPanel && (
+              <Card className="border-blue-200 bg-blue-50">
+                <CardHeader className="pb-3">
+                  <CardTitle className="text-lg flex items-center gap-2">
+                    <Bot className="h-5 w-5" />
+                    AI Contract Analysis
+                    {contractContent && (
+                      <Badge variant="secondary" className="ml-2">
+                        Ready ({contractContent.length.toLocaleString()} chars)
+                      </Badge>
+                    )}
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="grid grid-cols-1 gap-4">
+                    <div>
+                      <label className="text-sm font-medium">Contract Type</label>
+                      <Select value={contractType} onValueChange={setContractType}>
+                        <SelectTrigger className="h-8">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="partnership">Partnership Agreement</SelectItem>
+                          <SelectItem value="employment">Employment Contract</SelectItem>
+                          <SelectItem value="service">Service Agreement</SelectItem>
+                          <SelectItem value="nda">NDA/Confidentiality</SelectItem>
+                          <SelectItem value="general">General Contract</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div>
+                      <label className="text-sm font-medium">Analysis Type</label>
+                      <Select value={analysisType} onValueChange={setAnalysisType}>
+                        <SelectTrigger className="h-8">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="review">Full Legal Review</SelectItem>
+                          <SelectItem value="extract">Extract Key Information</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
+
+                  <div className="flex gap-2">
+                    <Button
+                      onClick={extractTextFromPDF}
+                      disabled={isExtractingFromPDF}
+                      variant="outline"
+                      size="sm"
+                      className="flex items-center gap-1"
+                    >
+                      {isExtractingFromPDF ? (
+                        <>
+                          <Loader2 className="h-3 w-3 animate-spin" />
+                          Extracting...
+                        </>
+                      ) : (
+                        <>
+                          <RefreshCw className="h-3 w-3" />
+                          Extract from PDF
+                        </>
+                      )}
+                    </Button>
+                    
+                    <Button
+                      onClick={handleAIAnalysis}
+                      disabled={isAnalyzing || !contractContent}
+                      className="flex items-center gap-1"
+                      size="sm"
+                    >
+                      {isAnalyzing ? (
+                        <>
+                          <Loader2 className="h-3 w-3 animate-spin" />
+                          Analyzing...
+                        </>
+                      ) : (
+                        <>
+                          <Bot className="h-3 w-3" />
+                          Run AI Analysis
+                        </>
+                      )}
+                    </Button>
+                  </div>
+
+                  {analysisError && (
+                    <Alert>
+                      <AlertCircle className="h-4 w-4" />
+                      <AlertDescription>{analysisError}</AlertDescription>
+                    </Alert>
+                  )}
+
+                  {aiAnalysis && (
+                    <div className="bg-white rounded-lg p-3 border">
+                      <div className="text-sm">
+                        <div className="font-medium mb-2">AI Analysis Result:</div>
+                        <div className="text-gray-700 text-xs max-h-32 overflow-y-auto whitespace-pre-wrap">
+                          {aiAnalysis.analysis}
+                        </div>
+                        <div className="mt-2 text-xs text-gray-500 flex items-center gap-2">
+                          <span>Type: {aiAnalysis.analysisType}</span>
+                          <span>•</span>
+                          <span>Generated: {new Date(aiAnalysis.timestamp).toLocaleString()}</span>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            )}
+            {/* Hukum Recommendations */}
+            <div className="space-y-3">
+              <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                <div className="flex items-start gap-3">
+                  <div className="bg-blue-500 text-white rounded-full w-6 h-6 flex items-center justify-center text-sm font-bold">
+                    1
+                  </div>
+                  <div className="flex-1">
+                    <h4 className="font-medium text-gray-900 mb-2">
+                      Pasal 1320 KUH Perdata – Syarat Sahnya Perjanjian
+                    </h4>
+                    <p className="text-sm text-gray-700 mb-3">
+                      "Perjanjian ini telah memenuhi 4 syarat sahnya perjanjian, kesepakatan para pihak, objek tertentu, dan sebab yang halal."
+                    </p>
+                    <p className="text-sm text-gray-600 mb-3">
+                      "Alasan: Mengatur dasar legalitas kontrak, jika tidak memenuhi syarat ini, kontrak bisa dianggap batal demi hukum."
+                    </p>
+                    <div className="flex gap-2">
+                      <Button size="sm" variant="outline" className="text-xs">
+                        Hapus
+                      </Button>
+                      <Button size="sm" className="text-xs bg-blue-500 text-white">
+                        Tambah ke daftar
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                <div className="flex items-start gap-3">
+                  <div className="bg-blue-500 text-white rounded-full w-6 h-6 flex items-center justify-center text-sm font-bold">
+                    2
+                  </div>
+                  <div className="flex-1">
+                    <h4 className="font-medium text-gray-900 mb-2">
+                      Pasal 1338 KUH Perdata – Asas Kebebasan Berkontrak
+                    </h4>
+                    <p className="text-sm text-gray-700 mb-3">
+                      "Perjanjian ini telah memenuhi 4 syarat sahnya perjanjian, kesepakatan para pihak, objek tertentu, dan sebab yang halal."
+                    </p>
+                    <p className="text-sm text-gray-600 mb-3">
+                      "Alasan: Mengatur dasar legalitas kontrak, jika tidak memenuhi syarat ini, kontrak bisa dianggap batal demi hukum."
+                    </p>
+                    <div className="flex gap-2">
+                      <Button size="sm" variant="outline" className="text-xs">
+                        Hapus
+                      </Button>
+                      <Button size="sm" className="text-xs bg-blue-500 text-white">
+                        Tambah ke daftar
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Daftar Pasal Terkait */}
+            <div className="mt-6">
+              <h3 className="font-semibold text-gray-900 mb-4">Daftar Pasal terkait:</h3>
+              <div className="space-y-2">
+                <div className="flex items-center gap-3 p-3 bg-white border rounded-lg">
+                  <div className="bg-blue-500 text-white rounded-full w-6 h-6 flex items-center justify-center text-sm font-bold">
+                    1
+                  </div>
+                  <div className="flex-1">
+                    <p className="text-sm font-medium">Pasal 1320 KUH Perdata – Syarat Sahnya Perjanjian</p>
+                    <p className="text-xs text-gray-600">Perjanjian ini telah memenuhi 4 syarat sahnya perjanjian, kesepakatan para pihak, objek tertentu, dan sebab yang halal.</p>
+                  </div>
+                  <div className="flex gap-1">
+                    <Button size="sm" variant="outline" className="text-xs">
+                      Hapus
+                    </Button>
+                    <Button size="sm" className="text-xs bg-blue-500 text-white">
+                      Lihat penjelasan
+                    </Button>
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-3 p-3 bg-white border rounded-lg">
+                  <div className="bg-blue-500 text-white rounded-full w-6 h-6 flex items-center justify-center text-sm font-bold">
+                    2
+                  </div>
+                  <div className="flex-1">
+                    <p className="text-sm font-medium">Pasal 1320 KUH Perdata – Syarat Sahnya Perjanjian</p>
+                    <p className="text-xs text-gray-600">Perjanjian ini telah memenuhi 4 syarat sahnya perjanjian, kesepakatan para pihak, objek tertentu, dan sebab yang halal.</p>
+                  </div>
+                  <div className="flex gap-1">
+                    <Button size="sm" variant="outline" className="text-xs">
+                      Hapus
+                    </Button>
+                    <Button size="sm" className="text-xs bg-blue-500 text-white">
+                      Lihat penjelasan
+                    </Button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Center Panel - PDF Viewer */}
+        <div className="flex-1 bg-gray-50 flex flex-col">
+          <div className="flex-1 overflow-hidden relative">
             {isLoadingText ? (
               <Skeleton className="w-full h-full" />
             ) : (
-              <ContractViewerOverlay
-                file={pdfFile}
-                activeFindingId={activeFindingId}
-                reviewFindings={allFindings}
-                categoryColors={categoryColors}
-                textWithCoords={textWithCoords}
-              />
+              <div className="w-full h-full">
+                <ContractViewerOverlay
+                  file={pdfFile}
+                  activeFindingId={activeFindingId}
+                  reviewFindings={allFindings}
+                  categoryColors={categoryColors}
+                  textWithCoords={textWithCoords}
+                />
+              </div>
             )}
           </div>
-        </ResizablePanel>
-        <ResizableHandle withHandle />
-        <ResizablePanel defaultSize={40}>
-          <Card className="h-full rounded-none border-0 border-l">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <AlertCircle />
-                Review Findings
-                <Badge variant="secondary">{allFindings.length} total</Badge>
-                {Object.keys(groupedFindings).some((key) =>
-                  key.startsWith("AI")
-                ) && (
-                  <Badge variant="outline" className="ml-2">
+        </div>
+
+        {/* Right Panel - Skor Risiko */}
+        <div className="w-1/3 border-l bg-white flex flex-col">
+          <div className="p-4 border-b flex-shrink-0">
+            <h2 className="text-lg font-semibold text-gray-900">Skor Risiko</h2>
+          </div>
+          <div className="flex-1 p-4 space-y-4 overflow-y-auto">
+            {/* Total Findings Summary */}
+            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+              <div className="text-center">
+                <div className="text-2xl font-bold text-blue-900">{allFindings.length}</div>
+                <div className="text-sm text-blue-700">Total Findings</div>
+                {Object.keys(groupedFindings).some((key) => key.startsWith("AI")) && (
+                  <Badge variant="outline" className="mt-2">
                     <Bot className="h-3 w-3 mr-1" />
                     AI Enhanced
                   </Badge>
                 )}
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="h-[calc(100%-80px)] overflow-y-auto">
-              <Accordion type="multiple" className="w-full space-y-4">
-                {Object.entries(groupedFindings).map(
-                  ([groupTitle, findings]) => (
-                    <AccordionItem
-                      key={groupTitle}
-                      value={groupTitle}
-                      className="rounded-lg border bg-gray-50 dark:bg-gray-900"
-                    >
-                      <AccordionTrigger className="p-4 text-lg font-semibold hover:no-underline">
-                        {groupTitle} ({findings.length})
-                        {groupTitle.startsWith("AI") && (
-                          <Badge variant="outline" className="ml-2">
-                            <Bot className="h-3 w-3 mr-1" />
-                            AI
-                          </Badge>
-                        )}
-                      </AccordionTrigger>
-                      <AccordionContent className="p-2 pt-0">
-                        <Accordion
-                          type="single"
-                          collapsible
-                          className="w-full space-y-2"
-                          value={activeFindingId || ""}
-                          onValueChange={(value) => setActiveFindingId(value)}
-                        >
-                          {findings.map((finding) => (
-                            <AccordionItem
-                              key={finding.id}
-                              value={finding.id}
-                              id={finding.id}
-                              className={`rounded-lg border-l-4 ${
-                                categoryColors[finding.category].border
-                              } bg-white dark:bg-gray-800`}
-                            >
-                              <AccordionTrigger className="p-4 hover:no-underline">
-                                <div className="flex items-center gap-3 text-left">
-                                  <Badge
-                                    className={`${
-                                      categoryColors[finding.category].badge
-                                    } text-white`}
-                                  >
-                                    {finding.category}
-                                  </Badge>
-                                  <span>
-                                    {finding.id.startsWith("ai-")
-                                      ? "AI Finding"
-                                      : "Temuan"}{" "}
-                                    #
-                                    {
-                                      finding.id.split("-")[
-                                        finding.id.split("-").length - 1
-                                      ]
-                                    }{" "}
-                                    di Hal. {finding.page}
-                                  </span>
-                                </div>
-                              </AccordionTrigger>
-                              <AccordionContent className="p-4 pt-0">
-                                <p className="text-muted-foreground italic mb-2">
-                                  "{finding.text}"
-                                </p>
-                                <p>{finding.comment}</p>
-                              </AccordionContent>
-                            </AccordionItem>
-                          ))}
-                        </Accordion>
-                      </AccordionContent>
-                    </AccordionItem>
-                  )
-                )}
-              </Accordion>
-            </CardContent>
-          </Card>
-        </ResizablePanel>
-      </ResizablePanelGroup>
+              </div>
+            </div>
+
+            {/* Findings by Category */}
+            <div className="space-y-4">
+              {Object.entries(groupedFindings).map(([groupTitle, findings]) => (
+                <div key={groupTitle} className="space-y-2">
+                  <div className="flex items-center gap-2">
+                    <h3 className="font-medium text-gray-900">{groupTitle}</h3>
+                    <Badge variant="secondary" className="text-xs">{findings.length}</Badge>
+                    {groupTitle.startsWith("AI") && (
+                      <Badge variant="outline" className="text-xs">
+                        <Bot className="h-3 w-3 mr-1" />
+                        AI
+                      </Badge>
+                    )}
+                  </div>
+                  
+                  {findings.map((finding) => {
+                    const isActive = activeFindingId === finding.id;
+                    const colorClass = 
+                      finding.category === 'Critical' ? 'bg-red-50 border-red-200 hover:bg-red-100' :
+                      finding.category === 'Suggestion' ? 'bg-orange-50 border-orange-200 hover:bg-orange-100' :
+                      'bg-green-50 border-green-200 hover:bg-green-100';
+                    
+                    const iconClass = 
+                      finding.category === 'Critical' ? 'bg-red-500' :
+                      finding.category === 'Suggestion' ? 'bg-orange-500' :
+                      'bg-green-500';
+
+                    return (
+                      <div
+                        key={finding.id}
+                        className={`${colorClass} ${isActive ? 'ring-2 ring-blue-500' : ''} border rounded-lg p-3 cursor-pointer transition-all duration-200`}
+                        onClick={() => setActiveFindingId(activeFindingId === finding.id ? null : finding.id)}
+                      >
+                        <div className="flex items-start gap-3">
+                          <div className={`${iconClass} text-white rounded-full w-6 h-6 flex items-center justify-center text-sm font-bold shrink-0`}>
+                            {finding.category === 'Critical' ? '!' : 
+                             finding.category === 'Suggestion' ? '?' : '✓'}
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center gap-2 mb-1">
+                              <Badge className={`${categoryColors[finding.category].badge} text-white text-xs`}>
+                                {finding.category}
+                              </Badge>
+                              <span className="text-xs text-gray-500">Page {finding.page}</span>
+                            </div>
+                            <p className="text-sm font-medium text-gray-900 mb-2">
+                              {finding.id.startsWith("ai-") ? "AI Finding" : "Finding"} #{finding.id.split("-")[finding.id.split("-").length - 1]}
+                            </p>
+                            <p className="text-xs text-gray-600 italic mb-2 line-clamp-2">
+                              "{finding.text}"
+                            </p>
+                            {isActive && (
+                              <p className="text-xs text-gray-700 mt-2 p-2 bg-white rounded border">
+                                {finding.comment}
+                              </p>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
   );
 }
