@@ -437,52 +437,52 @@ export default function EmploymentPage({
     }
   };
   return (
-    <div className="container mx-auto p-6 max-w-4xl">
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold text-gray-900 mb-2">
-          Draft Kontrak Employment
-        </h1>
-        <p className="text-gray-600">
-          Buat kontrak kerja dengan mudah dan lengkap
-        </p>
-      </div>
+    <div className="min-h-screen bg-white">
+      <div className="container mx-auto p-6 max-w-4xl">
+        <div className="mb-8">
+          <h1 className="text-3xl font-bold text-gray-900 mb-2">
+            Draft Kontrak Employment
+          </h1>
+          <p className="text-gray-600">
+            Buat kontrak kerja dengan mudah dan lengkap
+          </p>
+        </div>
 
       {/* Progress Steps */}
-      <div className="mb-8">
+      <div className="mb-8 bg-white p-6 rounded-lg shadow-sm border border-gray-100">
         <div className="flex items-center justify-between">
           {steps.map((step, index) => {
             const isActive = index === currentStep;
             const isCompleted = index < currentStep;
             const circleClass = isActive
-              ? "bg-transparent border-2 border-blue-600 text-blue-600"
+              ? "bg-blue-500 text-white shadow-lg"
               : isCompleted
-              ? "bg-blue-600 text-white"
-              : "bg-gray-200 text-gray-700";
+              ? "bg-green-500 text-white"
+              : "bg-gray-100 text-gray-500 border border-gray-200";
             const labelClass = isActive
-              ? "text-blue-600"
+              ? "text-blue-600 font-semibold"
               : isCompleted
-              ? "text-blue-600"
-              : "text-gray-500";
+              ? "text-green-600 font-medium"
+              : "text-gray-400";
             const lineClass =
-              index < currentStep ? "bg-blue-600" : "bg-gray-200";
+              index < currentStep ? "bg-green-400" : "bg-gray-200";
             return (
               <React.Fragment key={index}>
-                <div className="flex flex-col items-center text-center min-w-[70px]">
+                <div className="flex flex-col items-center text-center min-w-[80px]">
                   <div
-                    className={`w-9 h-9 rounded-full flex items-center justify-center text-sm font-semibold transition-colors ${circleClass}`}
+                    className={`w-10 h-10 rounded-full flex items-center justify-center text-sm font-bold transition-all duration-200 ${circleClass}`}
                   >
-                    {" "}
-                    {index + 1}{" "}
+                    {isCompleted ? "✓" : index + 1}
                   </div>
                   <span
-                    className={`mt-2 text-[11px] md:text-xs font-medium leading-snug ${labelClass}`}
+                    className={`mt-3 text-xs font-medium leading-tight max-w-[70px] ${labelClass}`}
                   >
                     {step}
                   </span>
                 </div>
                 {index < steps.length - 1 && (
                   <div
-                    className={`flex-1 h-px mx-2 md:mx-4 transition-colors ${lineClass}`}
+                    className={`flex-1 h-0.5 mx-3 transition-all duration-200 ${lineClass}`}
                   />
                 )}
               </React.Fragment>
@@ -492,10 +492,10 @@ export default function EmploymentPage({
       </div>
 
       {/* Step Content */}
-      <Card>
-        <CardHeader>
-          <CardTitle>{steps[currentStep]}</CardTitle>
-          <CardDescription>
+      <Card className="bg-white shadow-sm border border-gray-100">
+        <CardHeader className="bg-gray-50 border-b border-gray-100">
+          <CardTitle className="text-xl text-gray-800">{steps[currentStep]}</CardTitle>
+          <CardDescription className="text-gray-600">
             {currentStep === 0 && "Pilih cara mengisi kontrak kerja"}
             {currentStep === 1 && "Informasi umum perjanjian kerja"}
             {currentStep === 2 && "Data lengkap identitas pegawai"}
@@ -504,19 +504,19 @@ export default function EmploymentPage({
             {currentStep === 5 && "Perlindungan hukum dan kerahasiaan"}
           </CardDescription>
         </CardHeader>
-        <CardContent>
+        <CardContent className="p-6">
           {/* Step 1: Informasi Umum */}
           {currentStep === 1 && (
             <div className="space-y-6">
               {initialExtractedData && (
-                <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg">
+                <div className="p-4 bg-green-50 border border-green-200 rounded-lg">
                   <div className="flex items-center">
-                    <FileText className="w-5 h-5 text-blue-600 mr-2" />
-                    <p className="text-blue-800 font-medium">
+                    <CheckCircle className="w-5 h-5 text-green-600 mr-2" />
+                    <p className="text-green-800 font-medium">
                       Data telah diisi otomatis dari dokumen PDF yang di-upload
                     </p>
                   </div>
-                  <p className="text-blue-600 text-sm mt-1">
+                  <p className="text-green-600 text-sm mt-1">
                     Anda dapat mengedit data sesuai kebutuhan.
                   </p>
                 </div>
@@ -1022,24 +1022,26 @@ export default function EmploymentPage({
           )}
 
           {/* Navigation Buttons */}
-          <div className="flex justify-between mt-8 pt-6 border-t">
+          <div className="flex justify-between mt-8 pt-6 border-t border-gray-100">
             <Button
               variant="outline"
               onClick={prevStep}
               disabled={currentStep === 0}
+              className="px-6 py-2 border-gray-300 text-gray-600 hover:bg-gray-50"
             >
-              Sebelumnya
+              ← Sebelumnya
             </Button>
 
-            <div className="flex gap-2">
+            <div className="flex gap-3">
               {currentStep === steps.length - 1 ? (
                 <Button
                   onClick={handleGenerateContract}
                   disabled={isGenerating}
+                  className="px-6 py-2 bg-blue-600 hover:bg-blue-700 text-white"
                 >
                   {isGenerating
                     ? "Membuat Kontrak..."
-                    : "Simpan ke Database"}
+                    : "💾 Simpan ke Database"}
                 </Button>
               ) : (
                 <Button
@@ -1049,14 +1051,16 @@ export default function EmploymentPage({
                     (!inputMethod ||
                       (inputMethod === "upload" && !uploadedFile))
                   }
+                  className="px-6 py-2 bg-blue-600 hover:bg-blue-700 text-white"
                 >
-                  Selanjutnya
+                  Selanjutnya →
                 </Button>
               )}
             </div>
           </div>
         </CardContent>
       </Card>
+      </div>
     </div>
   );
 }

@@ -764,103 +764,220 @@ export default function DraftPage({
   };
 
   return (
-    <div className="container mx-auto p-6 max-w-4xl">
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold text-gray-900 mb-2">
-          Draft Kontrak Partnership
-        </h1>
-        <p className="text-gray-600">
-          Buat kontrak partnership dengan mudah dan lengkap
-        </p>
-      </div>
-
-      {/* Progress Steps */}
-      <div className="mb-8">
-        <div className="flex items-center justify-between">
-          {steps.map((step, index) => {
-            const isActive = index === currentStep;
-            const isCompleted = index < currentStep;
-            const circleClass = isActive
-              ? "bg-transparent border-2 border-blue-600 text-blue-600"
-              : isCompleted
-              ? "bg-blue-600 text-white"
-              : "bg-gray-200 text-gray-700";
-            const labelClass = isActive
-              ? "text-blue-600"
-              : isCompleted
-              ? "text-blue-600"
-              : "text-gray-500";
-            const lineClass =
-              index < currentStep ? "bg-blue-600" : "bg-gray-200";
-            return (
-              <React.Fragment key={index}>
-                <div className="flex flex-col items-center text-center min-w-[70px]">
-                  <div
-                    className={`w-9 h-9 rounded-full flex items-center justify-center text-sm font-semibold transition-colors ${circleClass}`}
-                  >
-                    {index + 1}
-                  </div>
-                  <span
-                    className={`mt-2 text-[11px] md:text-xs font-medium leading-snug ${labelClass}`}
-                  >
-                    {step}
-                  </span>
-                </div>
-                {index < steps.length - 1 && (
-                  <div
-                    className={`flex-1 h-px mx-2 md:mx-4 transition-colors ${lineClass}`}
-                  />
-                )}
-              </React.Fragment>
-            );
-          })}
+    <div className="min-h-screen bg-white">
+      <div className="container mx-auto px-6 py-8 max-w-4xl">
+        <div className="mb-8 text-center">
+          <h1 className="text-2xl font-semibold text-gray-900 mb-2">
+            Draft Kontrak Partnership
+          </h1>
+          <p className="text-gray-500 text-sm">
+            Buat kontrak partnership dengan mudah dan lengkap
+          </p>
         </div>
-      </div>
 
-      {/* Step Content */}
-      <Card>
-        <CardHeader>
-          <CardTitle>{steps[currentStep]}</CardTitle>
-          <CardDescription>
-            {currentStep === 0 && "Pilih cara mengisi kontrak"}
-            {currentStep === 1 && "Masukkan informasi dasar kontrak"}
-            {currentStep === 2 && "Data lengkap kedua belah pihak"}
-            {currentStep === 3 && "Ruang lingkup dan ketentuan layanan"}
-            {currentStep === 4 && "Detail keuangan dan pembayaran"}
-            {currentStep === 5 && "Aturan klaim dan penyelesaian sengketa"}
-          </CardDescription>
-        </CardHeader>
+        {/* Progress Steps - Clean Design */}
+        <div className="mb-10">
+          <div className="flex items-center justify-between max-w-3xl mx-auto px-8">
+            {steps.map((step, index) => {
+              const isActive = index === currentStep;
+              const isCompleted = index < currentStep;
+              
+              return (
+                <React.Fragment key={index}>
+                  <div className="flex flex-col items-center">
+                    {/* Circle with step number */}
+                    <div
+                      className={`
+                        w-8 h-8 rounded-full flex items-center justify-center text-sm font-semibold transition-all duration-200
+                        ${isActive 
+                          ? "bg-blue-500 text-white" 
+                          : isCompleted 
+                          ? "bg-blue-500 text-white" 
+                          : "bg-gray-200 text-gray-500"
+                        }
+                      `}
+                    >
+                      {isCompleted ? (
+                        <CheckCircle className="w-4 h-4" />
+                      ) : (
+                        index + 1
+                      )}
+                    </div>
+                    
+                    {/* Step label */}
+                    <div className="mt-2 text-center">
+                      <p className={`text-xs font-medium max-w-20 ${
+                        isActive ? "text-blue-500" : isCompleted ? "text-blue-500" : "text-gray-400"
+                      }`}>
+                        {step}
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* Connector line */}
+                  {index < steps.length - 1 && (
+                    <div className="flex-1 mx-3 -mt-4">
+                      <div className={`h-px w-full transition-all duration-200 ${
+                          index < currentStep ? "bg-blue-500" : "bg-gray-200"
+                      }`} />
+                    </div>
+                  )}
+                </React.Fragment>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* Step Content */}
+        <Card className="border border-gray-200 shadow-sm">
+          <CardHeader className="bg-gray-50 border-b border-gray-200">
+            <CardTitle className="text-lg text-gray-900">{steps[currentStep]}</CardTitle>
+            <CardDescription className="text-gray-600">
+              {currentStep === 0 && "Pilih cara mengisi kontrak"}
+              {currentStep === 1 && "Masukkan informasi dasar kontrak"}
+              {currentStep === 2 && "Data lengkap kedua belah pihak"}
+              {currentStep === 3 && "Ruang lingkup dan ketentuan layanan"}
+              {currentStep === 4 && "Detail keuangan dan pembayaran"}
+              {currentStep === 5 && "Aturan klaim dan penyelesaian sengketa"}
+            </CardDescription>
+          </CardHeader>
         <CardContent>
           {/* Step 1: Informasi Umum */}
           {currentStep === 1 && (
-            <div className="space-y-6">
+            <div className="space-y-8">
+              {/* Header with subtitle */}
+              <div className="text-center mb-8">
+                <p className="text-gray-600 text-sm">
+                  Silakan isi data dengan sesuai dan benar sebelum melanjutkan
+                </p>
+              </div>
+
               {isFieldDisabled() && (
-                <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg">
+                <div className="p-4 bg-gray-50 border border-gray-200 rounded-lg mb-6">
                   <div className="flex items-center">
-                    <FileText className="w-5 h-5 text-blue-600 mr-2" />
-                    <p className="text-blue-800 font-medium">
+                    <FileText className="w-5 h-5 text-gray-600 mr-2" />
+                    <p className="text-gray-800 font-medium">
                       Data telah diisi otomatis dari dokumen PDF yang di-upload
                     </p>
                   </div>
-                  <p className="text-blue-600 text-sm mt-1">
+                  <p className="text-gray-600 text-sm mt-1">
                     Anda dapat meninjau data di bawah ini. Field tidak dapat
                     diedit karena data berasal dari scan dokumen.
                   </p>
                 </div>
               )}
-              <div className="grid md:grid-cols-2 gap-6">
+
+              {/* Form Fields */}
+              <div className="space-y-6">
                 <div>
-                  <Label htmlFor="nomorKontrak">Nomor Kontrak</Label>
+                  <Label htmlFor="nomorKontrak" className="text-sm font-medium text-gray-700">
+                    Nomor Kontrak
+                  </Label>
                   <Input
                     id="nomorKontrak"
                     value={contractData.nomorKontrak}
                     onChange={(e) =>
                       handleInputChange("nomorKontrak", e.target.value)
                     }
-                    placeholder="Masukkan nomor kontrak"
+                    placeholder="Nomor Kontrak"
                     disabled={isFieldDisabled()}
+                    className="mt-1 h-12"
                   />
                 </div>
+
+                <div>
+                  <Label htmlFor="judul" className="text-sm font-medium text-gray-700">
+                    Judul Kontrak
+                  </Label>
+                  <Input
+                    id="judul"
+                    value={contractData.judul}
+                    onChange={(e) => handleInputChange("judul", e.target.value)}
+                    placeholder="Judul Kontrak"
+                    disabled={isFieldDisabled()}
+                    className="mt-1 h-12"
+                  />
+                </div>
+
+                <div className="grid md:grid-cols-2 gap-6">
+                  <div>
+                    <Label className="text-sm font-medium text-gray-700">
+                      Tanggal Mulai
+                    </Label>
+                    <Popover>
+                      <PopoverTrigger asChild>
+                        <Button
+                          variant="outline"
+                          className="w-full justify-start text-left font-normal h-12 mt-1"
+                          disabled={isFieldDisabled()}
+                        >
+                          <CalendarIcon className="mr-2 h-4 w-4" />
+                          {contractData.tanggalMulai
+                            ? format(contractData.tanggalMulai, "dd/MM/yyyy")
+                            : "Pilih tanggal"}
+                        </Button>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-auto p-0">
+                        <Calendar
+                          mode="single"
+                          selected={contractData.tanggalMulai}
+                          onSelect={(date) =>
+                            handleInputChange("tanggalMulai", date)
+                          }
+                        />
+                      </PopoverContent>
+                    </Popover>
+                  </div>
+
+                  <div>
+                    <Label className="text-sm font-medium text-gray-700">
+                      Tanggal Berakhir
+                    </Label>
+                    <Popover>
+                      <PopoverTrigger asChild>
+                        <Button
+                          variant="outline"
+                          className="w-full justify-start text-left font-normal h-12 mt-1"
+                          disabled={isFieldDisabled()}
+                        >
+                          <CalendarIcon className="mr-2 h-4 w-4" />
+                          {contractData.tanggalMulai && contractData.durasi
+                            ? format(calculateEndDate(contractData.tanggalMulai, contractData.durasi) || new Date(), "dd/MM/yyyy")
+                            : "Pilih tanggal"}
+                        </Button>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-auto p-0">
+                        <Calendar
+                          mode="single"
+                          selected={calculateEndDate(contractData.tanggalMulai, contractData.durasi)}
+                          onSelect={(date) => {
+                            // Calculate duration based on selected end date
+                            if (date && contractData.tanggalMulai) {
+                              const diffTime = Math.abs(date.getTime() - contractData.tanggalMulai.getTime());
+                              const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+                              handleInputChange("durasi", `${diffDays} hari`);
+                            }
+                          }}
+                        />
+                      </PopoverContent>
+                    </Popover>
+                  </div>
+                </div>
+              </div>
+
+              {/* Info text */}
+              <div className="text-center mt-8">
+                <p className="text-gray-500 text-sm">
+                  Pastikan Anda telah mengisi data dengan benar sebelum melanjutkan
+                </p>
+              </div>
+            </div>
+          )}
+
+          {/* Previous Step 1 content continues... */}
+          {currentStep === 1 && false && (
+            <div className="space-y-6">
+              <div className="grid md:grid-cols-2 gap-6">
                 <div>
                   <Label htmlFor="jenis">Jenis Kontrak</Label>
                   <Select
@@ -877,46 +994,6 @@ export default function DraftPage({
                       <SelectItem value="SERVICE">Service Agreement</SelectItem>
                     </SelectContent>
                   </Select>
-                </div>
-              </div>
-
-              <div>
-                <Label htmlFor="judul">Judul Kontrak</Label>
-                <Input
-                  id="judul"
-                  value={contractData.judul}
-                  onChange={(e) => handleInputChange("judul", e.target.value)}
-                  placeholder="Masukkan judul kontrak"
-                  disabled={isFieldDisabled()}
-                />
-              </div>
-
-              <div className="grid md:grid-cols-2 gap-6">
-                <div>
-                  <Label>Tanggal Mulai</Label>
-                  <Popover>
-                    <PopoverTrigger asChild>
-                      <Button
-                        variant="outline"
-                        className="w-full justify-start text-left font-normal"
-                        disabled={isFieldDisabled()}
-                      >
-                        <CalendarIcon className="mr-2 h-4 w-4" />
-                        {contractData.tanggalMulai
-                          ? format(contractData.tanggalMulai, "dd/MM/yyyy")
-                          : "Pilih tanggal"}
-                      </Button>
-                    </PopoverTrigger>
-                    <PopoverContent className="w-auto p-0">
-                      <Calendar
-                        mode="single"
-                        selected={contractData.tanggalMulai}
-                        onSelect={(date) =>
-                          handleInputChange("tanggalMulai", date)
-                        }
-                      />
-                    </PopoverContent>
-                  </Popover>
                 </div>
                 <div>
                   <Label htmlFor="durasi">Durasi Perjanjian</Label>
@@ -938,10 +1015,10 @@ export default function DraftPage({
           {currentStep === 2 && (
             <div className="space-y-6">
               {isFieldDisabled() && (
-                <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg">
+                <div className="p-4 bg-gray-50 border border-gray-200 rounded-lg">
                   <div className="flex items-center">
-                    <FileText className="w-5 h-5 text-blue-600 mr-2" />
-                    <p className="text-blue-800 font-medium">
+                    <FileText className="w-5 h-5 text-gray-600 mr-2" />
+                    <p className="text-gray-800 font-medium">
                       Data identitas para pihak telah diisi otomatis dari
                       dokumen PDF
                     </p>
@@ -1432,20 +1509,22 @@ export default function DraftPage({
           )}
 
           {/* Navigation Buttons */}
-          <div className="flex justify-between mt-8 pt-6 border-t">
+          <div className="flex justify-between items-center mt-8 pt-6 border-t border-gray-200">
             <Button
               variant="outline"
               onClick={prevStep}
               disabled={currentStep === 0}
+              className="px-6 py-2 text-gray-600 border-gray-300 hover:bg-gray-50 rounded-md"
             >
-              Sebelumnya
+              ← Kembali
             </Button>
 
-            <div className="flex gap-2">
+            <div className="flex gap-3">
               {currentStep === steps.length - 1 ? (
                 <Button
                   onClick={handleGenerateContract}
                   disabled={isGenerating}
+                  className="px-8 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-md font-medium"
                 >
                   {isGenerating ? (
                     <span className="flex items-center">
@@ -1464,14 +1543,16 @@ export default function DraftPage({
                     (!inputMethod ||
                       (inputMethod === "upload" && !uploadedFile))
                   }
+                  className="px-8 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-md font-medium"
                 >
-                  Selanjutnya
+                  Lanjut →
                 </Button>
               )}
             </div>
           </div>
         </CardContent>
       </Card>
+      </div>
     </div>
   );
 }

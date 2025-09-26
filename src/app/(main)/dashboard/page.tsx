@@ -19,8 +19,11 @@ import {
   FileText,
   Filter,
   ArrowUpDown,
-  Loader2
+  Loader2,
+  Edit,
+  Check
 } from "lucide-react";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 // TypeScript interfaces
 interface Contract {
@@ -182,6 +185,39 @@ export default function DashboardPage() {
     setSortBy("createdAt");
     setSortOrder("desc");
     setCurrentPage(1);
+  };
+
+  const handleStatusChange = async (contractId: number, newStatus: string) => {
+    try {
+      const response = await fetch(`/api/contract?id=${contractId}`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ status: newStatus }),
+      });
+
+      if (response.ok) {
+        // Update local state
+        setContracts(prev => 
+          prev.map(contract => 
+            contract.id === contractId 
+              ? { ...contract, status: newStatus }
+              : contract
+          )
+        );
+      } else {
+        console.error('Failed to update status');
+        alert('Gagal mengubah status kontrak');
+      }
+    } catch (error) {
+      console.error('Error updating status:', error);
+      alert('Terjadi kesalahan saat mengubah status');
+    }
+  };
+
+  const handleEditContract = (contractId: number) => {
+    router.push(`/contracts/${contractId}/edit`);
   };
 
   const getStatusBadgeColor = (status: string) => {
@@ -351,7 +387,8 @@ export default function DashboardPage() {
             <div className="col-span-4">Nama dokumen</div>
             <div className="col-span-2">Status</div>
             <div className="col-span-3">Counterparty</div>
-            <div className="col-span-3">Jatuh tempo</div>
+            <div className="col-span-2">Jatuh tempo</div>
+            <div className="col-span-1">Aksi</div>
           </div>
 
           {/* Contract List */}
@@ -376,12 +413,14 @@ export default function DashboardPage() {
               contracts.map((contract) => (
                 <div
                   key={contract.id}
-                  className="grid grid-cols-12 gap-4 p-4 hover:bg-gray-50 cursor-pointer transition-colors relative"
-                  onClick={() => handleRowClick(contract.id)}
+                  className="grid grid-cols-12 gap-4 p-4 hover:bg-gray-50 transition-colors relative"
                 >
                  
                   {/* Document Icon & Name */}
-                  <div className="col-span-4 flex items-center">
+                  <div 
+                    className="col-span-4 flex items-center cursor-pointer"
+                    onClick={() => handleRowClick(contract.id)}
+                  >
                     <div className="bg-gray-100 p-2 rounded-lg mr-3">
                       <FileText className="h-5 w-5 text-gray-600" />
                     </div>
@@ -390,25 +429,60 @@ export default function DashboardPage() {
                     </span>
                   </div>
 
-                  {/* Status */}
+                  {/* Status Dropdown */}
                   <div className="col-span-2 flex items-center">
-                    <span className={`px-3 py-1 text-sm rounded-full capitalize ${getStatusBadgeColor(contract.status)}`}>
-                      {contract.status}
-                    </span>
+                    <Select 
+                      value={contract.status} 
+                      onValueChange={(newStatus) => handleStatusChange(contract.id, newStatus)}
+                    >
+                      <SelectTrigger className="w-full h-8 text-sm border-0 bg-transparent hover:bg-gray-100 focus:ring-0">
+                        <div className={`px-3 py-1 text-sm rounded-full capitalize ${getStatusBadgeColor(contract.status)}`}>
+                          <SelectValue />
+                        </div>
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="draft">Draft</SelectItem>
+                        <SelectItem value="aktif">Aktif</SelectItem>
+                        <SelectItem value="berakhir">Berakhir</SelectItem>
+                        <SelectItem value="dihentikan">Dihentikan</SelectItem>
+                      </SelectContent>
+                    </Select>
                   </div>
 
                   {/* Counterparty */}
-                  <div className="col-span-3 flex items-center">
+                  <div 
+                    className="col-span-3 flex items-center cursor-pointer"
+                    onClick={() => handleRowClick(contract.id)}
+                  >
                     <span className="text-gray-900 truncate">
                       {contract.counterParty}
                     </span>
                   </div>
 
                   {/* Expiry Date */}
-                  <div className="col-span-3 flex items-center">
+                  <div 
+                    className="col-span-2 flex items-center cursor-pointer"
+                    onClick={() => handleRowClick(contract.id)}
+                  >
                     <span className="text-gray-600">
                       {contract.expiryDate}
                     </span>
+                  </div>
+
+                  {/* Action Buttons */}
+                  <div className="col-span-1 flex items-center justify-end gap-2">
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="h-8 w-8 p-0 text-gray-500 hover:text-blue-600 hover:bg-blue-50"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleEditContract(contract.id);
+                      }}
+                      title="Edit PDF Kontrak"
+                    >
+                      <Edit className="h-4 w-4" />
+                    </Button>
                   </div>
                 </div>
               ))
