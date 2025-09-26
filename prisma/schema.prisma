@@ -101,52 +101,41 @@ model Employment {
   kontrakid             Int @unique
   
   // Contract Information
-  nomorkontrak          String
-  judulkontrak          String
-  tanggalmulai          DateTime
-  tanggalakhir          DateTime
-  
-  // Company Information  
-  namaperusahaan        String
-  namadirektwr          String
-  alamatperusahaan      String
-  notelpperusahaan      String
-  emailperusahaan       String
-  npwpperusahaan        String
+  nomorkontrak            String
+  judulkontrak            String
+  jeniskontrak            String
+  tanggalmulai            DateTime
+  tanggalakhir            DateTime
   
   // Employee Information
-  namalengkappegawai    String
-  jabatan               String
-  alamatpegawai         String
-  jeniskelamin          String
-  usia                  Int
-  jenispegawai          String
-  noktp                 String
-  notelppegawai         String
-  emailpegawai          String
+  namalengkap             String
+  tanggallahir            String
+  jeniskelamin            String
+  alamatlengkap           String
+  nomortelepon            String
+  email                   String
   
   // Job Details
-  jobdesc               String
-  tempatkerja           String
-  waktukerja            String
-  waktuistirahat        String
-  ketentuancuti         String
-  ketentulembur         String
-  
+  posisijabatan           String
+  lokasikerja             String
+  tanggalmulaikerja       DateTime
+  haricuti                String  
+  deskripsipekerjaan      String
+  detailcuti              String
+  aturanlembur            String
+
   // Compensation
-  gajipokok             Int
-  tunjangantetap        Int
-  tunjangantidaktetap   Int
-  jaminansosial         String
-  fasilitaslain         String
+  gajipokok               Int
+  tunjangantetap          Int
+  tunjangantidaktetap     Int
+  jaminansosial           String
+  fasilitaslain           String
   
   // Legal & Disciplinary
-  perlindunganhukum     String
-  kerahasiaan           String
-  ketentuandisiplin     String
-  sanksi                String
-  pelanggaran           String
-  pemutusanhubungan     String
+  hukumdanrahasia         String
+  disiplin                String
+  sanksi                  String
+  pemutusanhubungankerja  String
 
   contract              Contract @relation(fields: [kontrakid], references: [id], onDelete: Cascade)
 

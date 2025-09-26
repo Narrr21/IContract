@@ -278,67 +278,46 @@ async function main() {
     (c) => c.type === "employment"
   );
 
+// Update the employment details in the seed file
   const employmentDetails = [
     // Employment 1: Pak Budi
     {
       kontrakid: employmentContracts[0].id,
       nomorkontrak: "EMP-2024-001",
       judulkontrak: "Kontrak Kerja Karyawan Tetap - Senior Developer",
+      jeniskontrak: "PKWTT",
       tanggalmulai: new Date("2024-01-15"),
       tanggalakhir: new Date("2025-03-01"),
 
-      // Company Information
-      namaperusahaan: "PT Mulia Abadi",
-      namadirektwr: "Dr. Ahmad Wijaya",
-      alamatperusahaan:
-        "Jl. Sudirman Kav 52-53, Jakarta Pusat, DKI Jakarta 10110",
-      notelpperusahaan: "+62-21-5123456",
-      emailperusahaan: "hr@muliaabadi.co.id",
-      npwpperusahaan: "01.234.567.8-901.000",
+      // Employee Information - using schema field names
+      namalengkap: "Budi Santoso",
+      tanggallahir: "1992-01-15",
+      jeniskelamin: "L",
+      alamatlengkap: "Jl. Kebon Jeruk No. 45, Jakarta Barat, DKI Jakarta 11530",
+      nomortelepon: "+62-812-3456-7890",
+      email: "budi.santoso@email.com",
 
-      // Employee Information
-      namalengkappegawai: "Budi Santoso",
-      jabatan: "Senior Software Developer",
-      alamatpegawai: "Jl. Kebon Jeruk No. 45, Jakarta Barat, DKI Jakarta 11530",
-      jeniskelamin: "Laki-laki",
-      usia: 32,
-      jenispegawai: "Karyawan Tetap",
-      noktp: "3171081234567890",
-      notelppegawai: "+62-812-3456-7890",
-      emailpegawai: "budi.santoso@email.com",
+      // Job Details - using schema field names
+      posisijabatan: "Senior Software Developer",
+      lokasikerja: "Kantor Pusat Jakarta dan Work From Home (Hybrid)",
+      tanggalmulaikerja: new Date("2024-01-15"),
+      haricuti: "12",
+      deskripsipekerjaan: "Mengembangkan aplikasi web dan mobile, melakukan code review, mentoring junior developer, bertanggung jawab atas arsitektur sistem, dan berkolaborasi dengan tim product manager.",
+      detailcuti: "12 hari cuti tahunan, cuti sakit sesuai surat dokter, cuti melahirkan 3 bulan",
+      aturanlembur: "Maksimal 14 jam per bulan, kompensasi 1.5x gaji per jam di hari kerja, 2x gaji per jam di weekend",
 
-      // Job Details
-      jobdesc:
-        "Mengembangkan aplikasi web dan mobile, melakukan code review, mentoring junior developer, bertanggung jawab atas arsitektur sistem, dan berkolaborasi dengan tim product manager.",
-      tempatkerja: "Kantor Pusat Jakarta dan Work From Home (Hybrid)",
-      waktukerja: "Senin-Jumat, 09:00-18:00 WIB",
-      waktuistirahat: "Istirahat makan siang 12:00-13:00 WIB",
-      ketentuancuti:
-        "12 hari cuti tahunan, cuti sakit sesuai surat dokter, cuti melahirkan 3 bulan",
-      ketentulembur:
-        "Maksimal 14 jam per bulan, kompensasi 1.5x gaji per jam di hari kerja, 2x gaji per jam di weekend",
-
-      // Compensation
-      gajipokok: 15000000, // 15 juta
-      tunjangantetap: 3000000, // 3 juta (transport + makan)
-      tunjangantidaktetap: 2000000, // 2 juta (performance bonus)
+      // Compensation - using schema field names
+      gajipokok: 15000000,
+      tunjangantetap: 3000000,
+      tunjangantidaktetap: 2000000,
       jaminansosial: "BPJS Kesehatan, BPJS Ketenagakerjaan, Asuransi Jiwa",
-      fasilitaslain:
-        "Laptop kantor, akses gym, parkir gratis, annual health check-up",
+      fasilitaslain: "Laptop kantor, akses gym, parkir gratis, annual health check-up",
 
-      // Legal & Disciplinary
-      perlindunganhukum:
-        "Perlindungan hukum sesuai UU Ketenagakerjaan No. 13 Tahun 2003",
-      kerahasiaan:
-        "Wajib menjaga kerahasiaan data perusahaan dan klien, tidak boleh mengungkapkan informasi teknis",
-      ketentuandisiplin:
-        "Hadir tepat waktu, berpakaian rapi, tidak menggunakan narkoba, tidak melakukan tindakan asusila",
-      sanksi:
-        "Teguran lisan, teguran tertulis, skorsing, pemotongan gaji, hingga pemutusan hubungan kerja",
-      pelanggaran:
-        "Keterlambatan berulang, tidak hadir tanpa keterangan, melanggar SOP, melakukan tindakan yang merugikan perusahaan",
-      pemutusanhubungan:
-        "Notice period 30 hari, pesangon sesuai UU, tidak boleh join kompetitor selama 6 bulan",
+      // Legal & Disciplinary - using schema field names
+      hukumdanrahasia: "Perlindungan hukum sesuai UU Ketenagakerjaan No. 13 Tahun 2003. Wajib menjaga kerahasiaan data perusahaan dan klien, tidak boleh mengungkapkan informasi teknis",
+      disiplin: "Hadir tepat waktu, berpakaian rapi, tidak menggunakan narkoba, tidak melakukan tindakan asusila",
+      sanksi: "Teguran lisan, teguran tertulis, skorsing, pemotongan gaji, hingga pemutusan hubungan kerja",
+      pemutusanhubungankerja: "Notice period 30 hari, pesangon sesuai UU, tidak boleh join kompetitor selama 6 bulan",
     },
 
     // Employment 2: John Smith
@@ -346,65 +325,41 @@ async function main() {
       kontrakid: employmentContracts[1].id,
       nomorkontrak: "EMP-2024-002",
       judulkontrak: "Employment Contract - Senior Software Developer",
+      jeniskontrak: "PKWT",
       tanggalmulai: new Date("2024-02-01"),
       tanggalakhir: new Date("2025-12-31"),
 
-      // Company Information
-      namaperusahaan: "PT Teknologi Digital Indonesia",
-      namadirektwr: "Sari Kusumawati",
-      alamatperusahaan:
-        "Jl. TB Simatupang Kav 88, Jakarta Selatan, DKI Jakarta 12560",
-      notelpperusahaan: "+62-21-7890123",
-      emailperusahaan: "careers@tekdigital.id",
-      npwpperusahaan: "02.345.678.9-012.000",
+      // Employee Information - using schema field names
+      namalengkap: "John Smith Anderson",
+      tanggallahir: "1995-05-20",
+      jeniskelamin: "L",
+      alamatlengkap: "Jl. Kemang Raya No. 12A, Jakarta Selatan, DKI Jakarta 12560",
+      nomortelepon: "+62-856-7890-1234",
+      email: "john.anderson@email.com",
 
-      // Employee Information
-      namalengkappegawai: "John Smith Anderson",
-      jabatan: "Senior Full-Stack Developer",
-      alamatpegawai:
-        "Jl. Kemang Raya No. 12A, Jakarta Selatan, DKI Jakarta 12560",
-      jeniskelamin: "Laki-laki",
-      usia: 29,
-      jenispegawai: "Karyawan Kontrak",
-      noktp: "3172051234567891",
-      notelppegawai: "+62-856-7890-1234",
-      emailpegawai: "john.anderson@email.com",
+      // Job Details - using schema field names
+      posisijabatan: "Senior Full-Stack Developer",
+      lokasikerja: "Remote Work (WFH) dengan kunjungan kantor 2x per bulan",
+      tanggalmulaikerja: new Date("2024-02-01"),
+      haricuti: "15",
+      deskripsipekerjaan: "Mengembangkan aplikasi full-stack menggunakan React dan Node.js, merancang database, mengimplementasikan API, melakukan testing, dan deployment aplikasi ke cloud platform.",
+      detailcuti: "15 hari cuti tahunan, sick leave unlimited dengan surat dokter, personal emergency leave 3 hari",
+      aturanlembur: "Tidak ada overtime, work-life balance prioritas utama",
 
-      // Job Details
-      jobdesc:
-        "Mengembangkan aplikasi full-stack menggunakan React dan Node.js, merancang database, mengimplementasikan API, melakukan testing, dan deployment aplikasi ke cloud platform.",
-      tempatkerja: "Remote Work (WFH) dengan kunjungan kantor 2x per bulan",
-      waktukerja: "Flexible hours dengan minimum 40 jam per minggu",
-      waktuistirahat: "Flexible break time, wajib offline 13:00-14:00 WIB",
-      ketentuancuti:
-        "15 hari cuti tahunan, sick leave unlimited dengan surat dokter, personal emergency leave 3 hari",
-      ketentulembur: "Tidak ada overtime, work-life balance prioritas utama",
+      // Compensation - using schema field names
+      gajipokok: 20000000,
+      tunjangantetap: 2500000,
+      tunjangantidaktetap: 5000000,
+      jaminansosial: "BPJS Kesehatan Premium, BPJS Ketenagakerjaan, Asuransi Kesehatan Swasta",
+      fasilitaslain: "MacBook Pro, monitor eksternal, ergonomic chair allowance, learning budget $1000/year",
 
-      // Compensation
-      gajipokok: 20000000, // 20 juta
-      tunjangantetap: 2500000, // 2.5 juta (internet + co-working space)
-      tunjangantidaktetap: 5000000, // 5 juta (quarterly performance bonus)
-      jaminansosial:
-        "BPJS Kesehatan Premium, BPJS Ketenagakerjaan, Asuransi Kesehatan Swasta",
-      fasilitaslain:
-        "MacBook Pro, monitor eksternal, ergonomic chair allowance, learning budget $1000/year",
-
-      // Legal & Disciplinary
-      perlindunganhukum:
-        "Full legal protection under Indonesian Labor Law and international best practices",
-      kerahasiaan:
-        "Strict NDA for all client projects, proprietary technology, and business strategies",
-      ketentuandisiplin:
-        "Professional conduct, meeting deadlines, active communication, continuous learning mindset",
-      sanksi:
-        "Performance improvement plan, formal warning, salary deduction, contract termination",
-      pelanggaran:
-        "Missing deadlines without notice, unprofessional behavior, breach of confidentiality, code quality issues",
-      pemutusanhubungan:
-        "60 days notice period, prorated severance, 1-year non-compete clause, smooth knowledge transfer",
+      // Legal & Disciplinary - using schema field names
+      hukumdanrahasia: "Full legal protection under Indonesian Labor Law and international best practices. Strict NDA for all client projects, proprietary technology, and business strategies",
+      disiplin: "Professional conduct, meeting deadlines, active communication, continuous learning mindset",
+      sanksi: "Performance improvement plan, formal warning, salary deduction, contract termination",
+      pemutusanhubungankerja: "60 days notice period, prorated severance, 1-year non-compete clause, smooth knowledge transfer",
     },
   ];
-
   // Create employment details
   for (const employment of employmentDetails) {
     await prisma.employment.create({

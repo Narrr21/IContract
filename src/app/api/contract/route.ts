@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { PrismaClient } from "@prisma/client";
 import fs from "fs";
 import path from "path";
+import { createContractWithDetails } from '@/lib/helper';
 
 const prisma = new PrismaClient();
 
@@ -94,7 +95,8 @@ export async function POST(req: NextRequest) {
       return NextResponse.json(
         { 
           success: false, 
-          error: 'Missing required fields: namakontrak, nomorkontrak, judul' 
+          error: 'Missing required fields: namakontrak, nomorkontrak, judul',
+          console: 'Received data: ' + JSON.stringify(data)
         },
         { status: 400 }
       );
@@ -106,7 +108,6 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({
       success: true,
       message: "Contract created successfully",
-      contract: serializeBigInt(fullContract),
     });
   } catch (error) {
     console.error("API Error - Create Contract:", error);

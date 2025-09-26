@@ -69,73 +69,38 @@ interface EmploymentContractData {
   judul: string
   jenis: string
   tanggalMulai: Date | undefined
-  durasi: string
+  tanggalSelesai: Date | undefined
   
   // Identitas Pegawai
   namaLengkap: string
-  tempatLahir: string
   tanggalLahir: Date | undefined
   jenisKelamin: 'L' | 'P' | ''
   alamatLengkap: string
   nomorTelepon: string
   email: string
-  pendidikanTerakhir: string
-  nomorIdentitas: string
-  jenisIdentitas: 'KTP' | 'Passport' | 'SIM' | ''
-  
-  // Identitas Perusahaan
-  namaPerusahaan: string
-  alamatPerusahaan: string
-  nomorTeleponPerusahaan: string
-  emailPerusahaan: string
-  npwpPerusahaan: string
-  namaPimpinan: string
-  jabatanPimpinan: string
   
   // Detail Pekerjaan
   posisiJabatan: string
-  departemen: string
   lokasiKerja: string
   tanggalMulaiKerja: Date | undefined
   jenisKontrak: 'PKWTT' | 'PKWT' | ''
-  masaPercobaan: string
+  hariCuti: string
   deskripsiPekerjaan: string
-  
-  // Jam Kerja & Waktu
-  hariKerja: string
-  jamKerja: string
-  jamIstirahat: string
-  jamLembur: string
+  detailCuti: string
+  aturanLembur: string
   
   // Kompensasi & Tunjangan
   gajiPokok: string
   tunjanganTetap: string
-  tunjanganVariabel: string
-  metodePembayaran: string
-  jadwalPembayaran: string
-  
-  // Fasilitas & Benefit
-  bpjs: string
-  asuransiKesehatan: string
-  cuti: string
+  tunjanganTidakTetap: string
+  jaminanSosial: string
   fasilitasLain: string
   
-  // Hak & Kewajiban
-  hakPegawai: string
-  kewajibanPegawai: string
-  hakPerusahaan: string
-  kewajibanPerusahaan: string
-  
-  // Perlindungan Hukum
-  kerahasiaan: string
-  nonKompete: string
-  aturanDisiplin: string
-  keselamatanKerja: string
-  perlindunganData: string
-  sanksiPelanggaran: string
-  prosedurPenyelesaianSengketa: string
-  masaNotice: string
-  pesangonPHK: string
+  // Aturan kerja
+  hukumDanRahasia: string
+  disiplin: string
+  sanksi: string
+  pemutusanHubunganKerja: string
 }
 
 export default function CreateContractPage() {
@@ -523,82 +488,6 @@ export default function CreateContractPage() {
       };
     }
   }
-  const convertContractDataToEmployment = (contractData: ContractData): EmploymentContractData => {
-    return {
-      // Informasi Umum Perjanjian
-      nomorKontrak: contractData.nomorKontrak || '',
-      judul: contractData.judul || '',
-      jenis: contractData.jenis || 'EMPLOYMENT',
-      tanggalMulai: contractData.tanggalMulai,
-      durasi: contractData.durasi || '',
-      
-      // Identitas Pegawai (from pihak2)
-      namaLengkap: contractData.pihak2.namaPerusahaan || '', // Employee name stored here
-      tempatLahir: '',
-      tanggalLahir: undefined,
-      jenisKelamin: '',
-      alamatLengkap: contractData.pihak2.alamat || '',
-      nomorTelepon: contractData.pihak2.nomorTelp || '',
-      email: contractData.pihak2.email || '',
-      pendidikanTerakhir: '',
-      nomorIdentitas: contractData.pihak2.npwp || '', // ID stored in npwp field
-      jenisIdentitas: '',
-      
-      // Identitas Perusahaan (from pihak1)
-      namaPerusahaan: contractData.pihak1.namaPerusahaan || '',
-      alamatPerusahaan: contractData.pihak1.alamat || '',
-      nomorTeleponPerusahaan: contractData.pihak1.nomorTelp || '',
-      emailPerusahaan: contractData.pihak1.email || '',
-      npwpPerusahaan: contractData.pihak1.npwp || '',
-      namaPimpinan: contractData.pihak1.namaDirektur || '',
-      jabatanPimpinan: 'Direktur',
-      
-      // Detail Pekerjaan
-      posisiJabatan: contractData.jenisLayanan || contractData.pihak2.namaDirektur || '', // Position stored here
-      departemen: '',
-      lokasiKerja: contractData.wilayahOperasional || '',
-      tanggalMulaiKerja: contractData.tanggalMulai,
-      jenisKontrak: contractData.pihak2.nomorUsaha as 'PKWTT' | 'PKWT' | '' || '', // Contract type stored here
-      masaPercobaan: '',
-      deskripsiPekerjaan: contractData.deskripsiLayanan || '',
-      
-      // Jam Kerja & Waktu (from hakKewajiban fields)
-      hariKerja: '',
-      jamKerja: contractData.hakKewajibanPihak1 || '',
-      jamIstirahat: '',
-      jamLembur: contractData.hakKewajibanPihak2 || '',
-      
-      // Kompensasi & Tunjangan
-      gajiPokok: contractData.nominal || '',
-      tunjanganTetap: '',
-      tunjanganVariabel: '',
-      metodePembayaran: contractData.caraPembayaran.bank || '',
-      jadwalPembayaran: contractData.syaratPembayaran || '',
-      
-      // Fasilitas & Benefit
-      bpjs: '',
-      asuransiKesehatan: '',
-      cuti: '',
-      fasilitasLain: '',
-      
-      // Hak & Kewajiban
-      hakPegawai: contractData.hakKewajibanPihak2 || '',
-      kewajibanPegawai: contractData.syaratLayanan || '',
-      hakPerusahaan: contractData.hakKewajibanPihak1 || '',
-      kewajibanPerusahaan: '',
-      
-      // Perlindungan Hukum
-      kerahasiaan: '',
-      nonKompete: '',
-      aturanDisiplin: '',
-      keselamatanKerja: '',
-      perlindunganData: '',
-      sanksiPelanggaran: contractData.dendaKeterlambatan || '',
-      prosedurPenyelesaianSengketa: contractData.penyelesaianSengketa || '',
-      masaNotice: contractData.batasWaktuKlaim || '',
-      pesangonPHK: contractData.maksimalKompensasi || ''
-    }
-  }
   const parseAIResponseToEmploymentData = (aiResponse: string): EmploymentContractData => {
   try {
     console.log('📊 Parsing AI response for employment contract...');
@@ -635,73 +524,38 @@ export default function CreateContractPage() {
       judul: extractValue(aiResponse, 'CONTRACT_TITLE') || 'Kontrak Kerja',
       jenis: extractValue(aiResponse, 'EMPLOYMENT_TYPE') || 'EMPLOYMENT',
       tanggalMulai: parseDate(extractValue(aiResponse, 'START_DATE')),
-      durasi: extractValue(aiResponse, 'DURATION') || '2 tahun',
+      tanggalSelesai: parseDate(extractValue(aiResponse, 'END_DATE')),
       
       // Identitas Pegawai
       namaLengkap: extractValue(aiResponse, 'EMPLOYEE_NAME'),
-      tempatLahir: '',
-      tanggalLahir: undefined,
+      tanggalLahir: parseDate(extractValue(aiResponse, 'EMPLOYEE_BIRTH_DATE')),
       jenisKelamin: extractValue(aiResponse, 'EMPLOYEE_GENDER') as 'L' | 'P' | '' || '',
       alamatLengkap: extractValue(aiResponse, 'EMPLOYEE_ADDRESS'),
       nomorTelepon: extractValue(aiResponse, 'EMPLOYEE_PHONE'),
       email: extractValue(aiResponse, 'EMPLOYEE_EMAIL'),
-      pendidikanTerakhir: '',
-      nomorIdentitas: extractValue(aiResponse, 'EMPLOYEE_ID'),
-      jenisIdentitas: 'KTP',
-      
-      // Identitas Perusahaan
-      namaPerusahaan: extractValue(aiResponse, 'COMPANY_NAME'),
-      alamatPerusahaan: extractValue(aiResponse, 'COMPANY_ADDRESS'),
-      nomorTeleponPerusahaan: extractValue(aiResponse, 'COMPANY_PHONE'),
-      emailPerusahaan: extractValue(aiResponse, 'COMPANY_EMAIL'),
-      npwpPerusahaan: extractValue(aiResponse, 'COMPANY_NPWP'),
-      namaPimpinan: extractValue(aiResponse, 'COMPANY_DIRECTOR'),
-      jabatanPimpinan: 'Direktur',
       
       // Detail Pekerjaan
       posisiJabatan: extractValue(aiResponse, 'EMPLOYEE_POSITION'),
-      departemen: '',
       lokasiKerja: extractValue(aiResponse, 'WORK_LOCATION'),
       tanggalMulaiKerja: parseDate(extractValue(aiResponse, 'START_DATE')),
       jenisKontrak: extractValue(aiResponse, 'CONTRACT_TYPE') as 'PKWTT' | 'PKWT' | '' || '',
-      masaPercobaan: extractValue(aiResponse, 'PROBATION_PERIOD'),
+      hariCuti: extractValue(aiResponse, 'LEAVE_POLICY'),
       deskripsiPekerjaan: extractValue(aiResponse, 'JOB_DESCRIPTION'),
-      
-      // Jam Kerja & Waktu
-      hariKerja: '',
-      jamKerja: extractValue(aiResponse, 'WORK_SCHEDULE'),
-      jamIstirahat: extractValue(aiResponse, 'BREAK_TIME'),
-      jamLembur: extractValue(aiResponse, 'OVERTIME_POLICY'),
+      detailCuti: extractValue(aiResponse, 'LEAVE_DETAILS'),
+      aturanLembur: extractValue(aiResponse, 'OVERTIME_POLICY'),
       
       // Kompensasi & Tunjangan
       gajiPokok: extractValue(aiResponse, 'BASIC_SALARY'),
       tunjanganTetap: extractValue(aiResponse, 'FIXED_ALLOWANCES'),
-      tunjanganVariabel: extractValue(aiResponse, 'VARIABLE_ALLOWANCES'),
-      metodePembayaran: '',
-      jadwalPembayaran: extractValue(aiResponse, 'PAYMENT_SCHEDULE'),
-      
-      // Fasilitas & Benefit
-      bpjs: extractValue(aiResponse, 'SOCIAL_SECURITY'),
-      asuransiKesehatan: extractValue(aiResponse, 'HEALTH_INSURANCE'),
-      cuti: extractValue(aiResponse, 'LEAVE_POLICY'),
+      tunjanganTidakTetap: extractValue(aiResponse, 'VARIABLE_ALLOWANCES'),
+      jaminanSosial: extractValue(aiResponse, 'SOCIAL_SECURITY'),
       fasilitasLain: extractValue(aiResponse, 'OTHER_BENEFITS'),
       
-      // Hak & Kewajiban
-      hakPegawai: '',
-      kewajibanPegawai: '',
-      hakPerusahaan: '',
-      kewajibanPerusahaan: '',
-      
-      // Perlindungan Hukum
-      kerahasiaan: extractValue(aiResponse, 'CONFIDENTIALITY'),
-      nonKompete: extractValue(aiResponse, 'NON_COMPETE'),
-      aturanDisiplin: extractValue(aiResponse, 'DISCIPLINARY_RULES'),
-      keselamatanKerja: '',
-      perlindunganData: '',
-      sanksiPelanggaran: '',
-      prosedurPenyelesaianSengketa: extractValue(aiResponse, 'DISPUTE_RESOLUTION'),
-      masaNotice: extractValue(aiResponse, 'NOTICE_PERIOD'),
-      pesangonPHK: extractValue(aiResponse, 'SEVERANCE_PAY')
+      // Aturan kerja
+      hukumDanRahasia: extractValue(aiResponse, 'CONFIDENTIALITY'),
+      disiplin: extractValue(aiResponse, 'DISCIPLINARY_RULES'),
+      sanksi: extractValue(aiResponse, 'SANCTIONS'),
+      pemutusanHubunganKerja: extractValue(aiResponse, 'TERMINATION_CONDITIONS')
     };
 
   } catch (error) {
@@ -709,23 +563,43 @@ export default function CreateContractPage() {
     
     // Return default employment contract structure
     return {
+      // Informasi Umum Perjanjian
       nomorKontrak: `PKK-${new Date().getFullYear()}-${Math.floor(Math.random() * 1000).toString().padStart(3, '0')}`,
       judul: 'Kontrak Kerja',
       jenis: 'EMPLOYMENT',
       tanggalMulai: new Date(),
-      durasi: '2 tahun',
-      namaLengkap: '', tempatLahir: '', tanggalLahir: undefined, jenisKelamin: '', alamatLengkap: '',
-      nomorTelepon: '', email: '', pendidikanTerakhir: '', nomorIdentitas: '', jenisIdentitas: '',
-      namaPerusahaan: '', alamatPerusahaan: '', nomorTeleponPerusahaan: '', emailPerusahaan: '',
-      npwpPerusahaan: '', namaPimpinan: '', jabatanPimpinan: '', posisiJabatan: '', departemen: '',
-      lokasiKerja: '', tanggalMulaiKerja: undefined, jenisKontrak: '', masaPercobaan: '',
-      deskripsiPekerjaan: '', hariKerja: '', jamKerja: '', jamIstirahat: '', jamLembur: '',
-      gajiPokok: '', tunjanganTetap: '', tunjanganVariabel: '', metodePembayaran: '',
-      jadwalPembayaran: '', bpjs: '', asuransiKesehatan: '', cuti: '', fasilitasLain: '',
-      hakPegawai: '', kewajibanPegawai: '', hakPerusahaan: '', kewajibanPerusahaan: '',
-      kerahasiaan: '', nonKompete: '', aturanDisiplin: '', keselamatanKerja: '',
-      perlindunganData: '', sanksiPelanggaran: '', prosedurPenyelesaianSengketa: '',
-      masaNotice: '', pesangonPHK: ''
+      tanggalSelesai: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000), // 1 year from now
+      
+      // Identitas Pegawai
+      namaLengkap: '',
+      tanggalLahir: undefined,
+      jenisKelamin: '',
+      alamatLengkap: '',
+      nomorTelepon: '',
+      email: '',
+      
+      // Detail Pekerjaan
+      posisiJabatan: '',
+      lokasiKerja: '',
+      tanggalMulaiKerja: undefined,
+      jenisKontrak: '',
+      hariCuti: '',
+      deskripsiPekerjaan: '',
+      detailCuti: '',
+      aturanLembur: '',
+      
+      // Kompensasi & Tunjangan
+      gajiPokok: '',
+      tunjanganTetap: '',
+      tunjanganTidakTetap: '',
+      jaminanSosial: '',
+      fasilitasLain: '',
+      
+      // Aturan kerja
+      hukumDanRahasia: '',
+      disiplin: '',
+      sanksi: '',
+      pemutusanHubunganKerja: ''
     };
   }
 }
