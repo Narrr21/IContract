@@ -70,10 +70,12 @@ export function Navbar() {
 
   // Array untuk link navigasi agar lebih rapi
   const navLinks = [
-    { href: "/", label: "Beranda" },
+    { href: "/dashboard", label: "Beranda" },
     { href: "/buat-kontrak", label: "Buat Kontrak" },
     { href: "/review", label: "Review" },
   ];
+
+  const homeLink = user ? "/dashboard" : "/";
 
   // --- RENDER UI YANG SESUAI DESAIN (DIADOPSI DARI JAWABAN SEBELUMNYA) ---
 
