@@ -19,14 +19,16 @@ import {
   DropdownMenuSeparator,
   DropdownMenuItem,
 } from "@/components/ui/dropdown-menu";
+import { getRoleDisplayName, hasRouteAccess } from "@/lib/rolePermissions";
 
-// Interface User tetap sama
+// Interface User with role information
 interface User {
   firstName: string;
   lastName: string;
   email: string;
   avatarUrl?: string; // Avatar bisa jadi opsional
   initials: string;
+  category?: "MANAGEMENT" | "ADMIN" | "HR" | "LEGAL";
 }
 
 export function Navbar() {
@@ -68,12 +70,54 @@ export function Navbar() {
     router.push("/login");
   };
 
-  // Array untuk link navigasi agar lebih rapi
-  const navLinks = [
-    { href: "/dashboard", label: "Beranda" },
-    { href: "/create", label: "Buat Kontrak" },
-    { href: "/review", label: "Review" },
-  ];
+  // Role-based navigation configuration
+  // MANAGEMENT: Can view dashboard, review, employment contracts, and drafts
+  // ADMIN: Full access to all features
+  // HR: Can create contracts, manage employment contracts, and drafts
+  // LEGAL: Can create contracts, review contracts, and manage drafts
+  const getNavLinksForRole = (category?: string) => {
+    const allNavLinks = {
+      dashboard: { href: "/dashboard", label: "Beranda" },
+      create: { href: "/create", label: "Buat Kontrak" },
+      review: { href: "/review", label: "Review" },
+      employment: { href: "/employment", label: "Kontrak Kerja" },
+      draft: { href: "/draft", label: "Draft" },
+      profile: { href: "/profile", label: "Profil" },
+      register: { href: "/register", label: "Buat Akun" },
+    };
+
+    // Define role-based navigation access
+    switch (category) {
+      case "MANAGEMENT":
+        return [
+          allNavLinks.dashboard,
+          allNavLinks.review,
+          allNavLinks.employment,
+          allNavLinks.draft,
+        ];
+      case "ADMIN":
+        return [allNavLinks.dashboard, allNavLinks.register];
+      case "HR":
+        return [
+          allNavLinks.dashboard,
+          allNavLinks.create,
+          allNavLinks.employment,
+          allNavLinks.draft,
+        ];
+      case "LEGAL":
+        return [
+          allNavLinks.dashboard,
+          allNavLinks.create,
+          allNavLinks.review,
+          allNavLinks.draft,
+        ];
+      default:
+        // Default navigation for users without specific roles
+        return [allNavLinks.dashboard, allNavLinks.create, allNavLinks.review];
+    }
+  };
+
+  const navLinks = getNavLinksForRole(user?.category);
 
   const homeLink = user ? "/dashboard" : "/";
 
@@ -149,6 +193,15 @@ export function Navbar() {
                 className="min-w-0 w-fit bg-transparent border-gray-200"
                 style={{ width: "var(--radix-dropdown-menu-trigger-width)" }}
               >
+                <DropdownMenuLabel className="text-sm font-medium text-gray-600 bg-[#F8F8FF]">
+                  {user.firstName} {user.lastName}
+                </DropdownMenuLabel>
+                {user.category && (
+                  <DropdownMenuLabel className="text-xs text-blue-600 bg-[#F8F8FF] pt-0">
+                    {getRoleDisplayName(user.category)}
+                  </DropdownMenuLabel>
+                )}
+                <DropdownMenuSeparator />
                 <DropdownMenuItem
                   onClick={() => router.push("/profile")}
                   className="text-black bg-[#F8F8FF] hover:bg-gray-100 cursor-pointer focus:bg-gray-100 flex items-center gap-2"

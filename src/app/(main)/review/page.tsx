@@ -17,10 +17,24 @@ import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { AlertCircle, FileText, Bot, Upload, Loader2, RefreshCw } from "lucide-react";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
+  AlertCircle,
+  FileText,
+  Bot,
+  Upload,
+  Loader2,
+  RefreshCw,
+} from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { ReviewAccess } from "@/components/auth/ProtectedRoute";
 
 const ContractViewerOverlay = dynamic(
   () =>
@@ -75,9 +89,11 @@ const categoryColors = {
   },
 };
 
-export default function ContractReviewerPage() {
+function ContractReviewerPageContent() {
   // Existing state
-  const [activeFindingId, setActiveFindingId] = useState<string | null>("finding-1");
+  const [activeFindingId, setActiveFindingId] = useState<string | null>(
+    "finding-1"
+  );
   const [textWithCoords, setTextWithCoords] = useState([]);
   const [isLoadingText, setIsLoadingText] = useState(true);
   const pdfFile = "sample-kontrak.pdf";
@@ -93,8 +109,10 @@ export default function ContractReviewerPage() {
   const [isExtractingFromPDF, setIsExtractingFromPDF] = useState(false);
 
   // NEW: Dynamic findings from AI or static data
-  const [groupedFindings, setGroupedFindings] = useState<{ [key: string]: Finding[] }>({
-    "Kesalahan": [
+  const [groupedFindings, setGroupedFindings] = useState<{
+    [key: string]: Finding[];
+  }>({
+    Kesalahan: [
       {
         id: "finding-1",
         page: 5,
@@ -112,7 +130,7 @@ export default function ContractReviewerPage() {
         category: "Suggestion",
       },
     ],
-    "Hukum": [
+    Hukum: [
       {
         id: "finding-3",
         page: 3,
@@ -135,35 +153,39 @@ export default function ContractReviewerPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ fileName: pdfFile }),
       });
-      
+
       if (!response.ok) {
         throw new Error(`Failed to extract text: ${response.status}`);
       }
-      
+
       const data = await response.json();
-      
+
       // Convert coordinate data to plain text
-      const extractedText = data.textData
-        ?.map((item: any) => {
-          // Handle different text item formats
-          if (typeof item === 'string') return item;
-          if (item.text) return item.text;
-          if (item.str) return item.str; // Some PDF parsers use 'str'
-          return '';
-        })
-        .filter((text: string) => text.trim()) // Remove empty strings
-        .join(' ') || '';
-      
+      const extractedText =
+        data.textData
+          ?.map((item: any) => {
+            // Handle different text item formats
+            if (typeof item === "string") return item;
+            if (item.text) return item.text;
+            if (item.str) return item.str; // Some PDF parsers use 'str'
+            return "";
+          })
+          .filter((text: string) => text.trim()) // Remove empty strings
+          .join(" ") || "";
+
       if (extractedText.length > 0) {
         setContractContent(extractedText);
         console.log(`✅ Extracted ${extractedText.length} characters from PDF`);
       } else {
-        throw new Error('No text content found in PDF');
+        throw new Error("No text content found in PDF");
       }
-      
     } catch (error) {
       console.error("❌ Failed to extract text from PDF:", error);
-      setAnalysisError(error instanceof Error ? error.message : "Failed to extract text from PDF");
+      setAnalysisError(
+        error instanceof Error
+          ? error.message
+          : "Failed to extract text from PDF"
+      );
     } finally {
       setIsExtractingFromPDF(false);
     }
@@ -179,31 +201,33 @@ export default function ContractReviewerPage() {
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ fileName: pdfFile }),
         });
-        
+
         if (!response.ok) {
           throw new Error(`API call failed with status: ${response.status}`);
         }
-        
+
         const data = await response.json();
         const textData = data.textData || [];
         setTextWithCoords(textData);
 
         // NEW: Auto-populate contract content when PDF is loaded
-        const extractedText = textData
-          ?.map((item: any) => {
-            if (typeof item === 'string') return item;
-            if (item.text) return item.text;
-            if (item.str) return item.str;
-            return '';
-          })
-          .filter((text: string) => text.trim())
-          .join(' ') || '';
-        
+        const extractedText =
+          textData
+            ?.map((item: any) => {
+              if (typeof item === "string") return item;
+              if (item.text) return item.text;
+              if (item.str) return item.str;
+              return "";
+            })
+            .filter((text: string) => text.trim())
+            .join(" ") || "";
+
         if (extractedText.length > 0 && !contractContent) {
           setContractContent(extractedText);
-          console.log(`🔄 Auto-populated contract content (${extractedText.length} characters)`);
+          console.log(
+            `🔄 Auto-populated contract content (${extractedText.length} characters)`
+          );
         }
-        
       } catch (error) {
         console.error("Failed to fetch text coordinates", error);
         setTextWithCoords([]);
@@ -226,7 +250,9 @@ export default function ContractReviewerPage() {
   // NEW: AI Analysis function
   const handleAIAnalysis = async () => {
     if (!contractContent.trim()) {
-      setAnalysisError("No contract content available. Please extract text from PDF first.");
+      setAnalysisError(
+        "No contract content available. Please extract text from PDF first."
+      );
       return;
     }
 
@@ -236,7 +262,7 @@ export default function ContractReviewerPage() {
 
     try {
       console.log("🤖 Starting AI analysis...");
-      
+
       const response = await fetch("/api/review", {
         method: "POST",
         headers: {
@@ -264,162 +290,202 @@ export default function ContractReviewerPage() {
 
       // NEW: Parse AI analysis and create findings
       parseAIAnalysisToFindings(data.analysis);
-      
     } catch (error) {
       console.error("❌ AI analysis error:", error);
-      setAnalysisError(error instanceof Error ? error.message : "Failed to analyze contract");
+      setAnalysisError(
+        error instanceof Error ? error.message : "Failed to analyze contract"
+      );
     } finally {
       setIsAnalyzing(false);
     }
   };
 
+  const parseAIAnalysisToFindings = (analysis: string) => {
+    try {
+      // Clear previous AI findings
+      const filteredFindings = Object.fromEntries(
+        Object.entries(groupedFindings).filter(([key]) => !key.startsWith("AI"))
+      );
 
-const parseAIAnalysisToFindings = (analysis: string) => {
-  try {
-    // Clear previous AI findings
-    const filteredFindings = Object.fromEntries(
-      Object.entries(groupedFindings).filter(([key]) => !key.startsWith('AI'))
-    );
-    
-    // Split by section headers (## format)
-    const sections = analysis.split(/(?=^##\s)/m).filter(section => section.trim());
-    const newFindings: { [key: string]: Finding[] } = {};
-    let findingCounter = 1;
-    
-    sections.forEach((section, index) => {
-      const trimmedSection = section.trim();
-      if (trimmedSection.length < 30) return; // Skip very short sections
-      
-      // Extract header and content
-      const lines = trimmedSection.split('\n');
-      const header = lines[0].replace(/^#+\s*/, '').trim();
-      const content = lines.slice(1).join('\n').trim();
-      
-      if (!content) return; // Skip if no content
-      
-      // Categorize based on section header
-      let category: "Critical" | "Suggestion" | "Positive" = "Suggestion";
-      let groupName = "AI General Analysis";
-      
-      const lowerHeader = header.toLowerCase();
-      
-      // Map specific headers to categories
-      if (lowerHeader.includes('critical') || lowerHeader.includes('risk') || 
-          lowerHeader.includes('issues') || lowerHeader.includes('violations') ||
-          lowerHeader.includes('problems')) {
-        category = "Critical";
-        groupName = "AI Critical Issues";
-      } else if (lowerHeader.includes('recommend') || lowerHeader.includes('improvement') || 
-                 lowerHeader.includes('suggest') || lowerHeader.includes('missing') ||
-                 lowerHeader.includes('compliance') || lowerHeader.includes('clauses')) {
-        category = "Suggestion";
-        groupName = "AI Recommendations";
-      } else if (lowerHeader.includes('positive') || lowerHeader.includes('good') || 
-                 lowerHeader.includes('well') || lowerHeader.includes('compliant') ||
-                 lowerHeader.includes('elements')) {
-        category = "Positive";
-        groupName = "AI Positive Notes";
-      } else if (lowerHeader.includes('summary') || lowerHeader.includes('assessment') ||
-                 lowerHeader.includes('analysis') || lowerHeader.includes('terms')) {
-        category = "Suggestion";
-        groupName = "AI Analysis Summary";
-      }
-      
-      if (!newFindings[groupName]) newFindings[groupName] = [];
-      
-      // Split content into bullet points if possible
-      const bulletPoints = content.split(/(?=^[-•*]\s)/m).filter(point => point.trim());
-      
-      if (bulletPoints.length > 1) {
-        // Multiple points - create separate findings
-        bulletPoints.forEach((point, pointIndex) => {
-          const cleanPoint = point.replace(/^[-•*]\s*/, '').trim();
-          if (cleanPoint.length < 20) return;
-          
-          const firstLine = cleanPoint.split('\n')[0];
-          const restOfPoint = cleanPoint.split('\n').slice(1).join('\n');
-          
+      // Split by section headers (## format)
+      const sections = analysis
+        .split(/(?=^##\s)/m)
+        .filter((section) => section.trim());
+      const newFindings: { [key: string]: Finding[] } = {};
+      let findingCounter = 1;
+
+      sections.forEach((section, index) => {
+        const trimmedSection = section.trim();
+        if (trimmedSection.length < 30) return; // Skip very short sections
+
+        // Extract header and content
+        const lines = trimmedSection.split("\n");
+        const header = lines[0].replace(/^#+\s*/, "").trim();
+        const content = lines.slice(1).join("\n").trim();
+
+        if (!content) return; // Skip if no content
+
+        // Categorize based on section header
+        let category: "Critical" | "Suggestion" | "Positive" = "Suggestion";
+        let groupName = "AI General Analysis";
+
+        const lowerHeader = header.toLowerCase();
+
+        // Map specific headers to categories
+        if (
+          lowerHeader.includes("critical") ||
+          lowerHeader.includes("risk") ||
+          lowerHeader.includes("issues") ||
+          lowerHeader.includes("violations") ||
+          lowerHeader.includes("problems")
+        ) {
+          category = "Critical";
+          groupName = "AI Critical Issues";
+        } else if (
+          lowerHeader.includes("recommend") ||
+          lowerHeader.includes("improvement") ||
+          lowerHeader.includes("suggest") ||
+          lowerHeader.includes("missing") ||
+          lowerHeader.includes("compliance") ||
+          lowerHeader.includes("clauses")
+        ) {
+          category = "Suggestion";
+          groupName = "AI Recommendations";
+        } else if (
+          lowerHeader.includes("positive") ||
+          lowerHeader.includes("good") ||
+          lowerHeader.includes("well") ||
+          lowerHeader.includes("compliant") ||
+          lowerHeader.includes("elements")
+        ) {
+          category = "Positive";
+          groupName = "AI Positive Notes";
+        } else if (
+          lowerHeader.includes("summary") ||
+          lowerHeader.includes("assessment") ||
+          lowerHeader.includes("analysis") ||
+          lowerHeader.includes("terms")
+        ) {
+          category = "Suggestion";
+          groupName = "AI Analysis Summary";
+        }
+
+        if (!newFindings[groupName]) newFindings[groupName] = [];
+
+        // Split content into bullet points if possible
+        const bulletPoints = content
+          .split(/(?=^[-•*]\s)/m)
+          .filter((point) => point.trim());
+
+        if (bulletPoints.length > 1) {
+          // Multiple points - create separate findings
+          bulletPoints.forEach((point, pointIndex) => {
+            const cleanPoint = point.replace(/^[-•*]\s*/, "").trim();
+            if (cleanPoint.length < 20) return;
+
+            const firstLine = cleanPoint.split("\n")[0];
+            const restOfPoint = cleanPoint.split("\n").slice(1).join("\n");
+
+            newFindings[groupName].push({
+              id: `ai-finding-${findingCounter++}`,
+              page: -1,
+              text:
+                firstLine.substring(0, 80) ||
+                `${header} - Point ${pointIndex + 1}`,
+              comment: restOfPoint || firstLine,
+              category,
+            });
+          });
+        } else {
+          // Single section - create one finding
+          const firstLine = content.split("\n")[0];
+          const restOfContent = content.split("\n").slice(1).join("\n");
+
           newFindings[groupName].push({
             id: `ai-finding-${findingCounter++}`,
             page: -1,
-            text: firstLine.substring(0, 80) || `${header} - Point ${pointIndex + 1}`,
-            comment: restOfPoint || firstLine,
-            category
+            text: firstLine.substring(0, 80) || header,
+            comment: restOfContent || content,
+            category,
+          });
+        }
+      });
+
+      // If no structured sections found, fall back to simple parsing
+      if (Object.keys(newFindings).length === 0) {
+        console.log("📝 No structured sections found, using fallback parsing");
+
+        // Simple fallback parsing
+        const paragraphs = analysis
+          .split("\n\n")
+          .filter((p) => p.trim().length > 30);
+
+        paragraphs.forEach((paragraph, index) => {
+          const lowerParagraph = paragraph.toLowerCase();
+          let category: "Critical" | "Suggestion" | "Positive" = "Suggestion";
+          let groupName = "AI General Analysis";
+
+          if (
+            lowerParagraph.includes("risk") ||
+            lowerParagraph.includes("critical") ||
+            lowerParagraph.includes("violation") ||
+            lowerParagraph.includes("problem")
+          ) {
+            category = "Critical";
+            groupName = "AI Critical Issues";
+          } else if (
+            lowerParagraph.includes("recommend") ||
+            lowerParagraph.includes("suggest") ||
+            lowerParagraph.includes("improve") ||
+            lowerParagraph.includes("consider")
+          ) {
+            category = "Suggestion";
+            groupName = "AI Recommendations";
+          } else if (
+            lowerParagraph.includes("good") ||
+            lowerParagraph.includes("positive") ||
+            lowerParagraph.includes("compliant") ||
+            lowerParagraph.includes("well")
+          ) {
+            category = "Positive";
+            groupName = "AI Positive Notes";
+          }
+
+          if (!newFindings[groupName]) newFindings[groupName] = [];
+
+          const firstSentence = paragraph.split(".")[0] + ".";
+
+          newFindings[groupName].push({
+            id: `ai-finding-${findingCounter++}`,
+            page: -1,
+            text: firstSentence.substring(0, 80),
+            comment: paragraph,
+            category,
           });
         });
-      } else {
-        // Single section - create one finding
-        const firstLine = content.split('\n')[0];
-        const restOfContent = content.split('\n').slice(1).join('\n');
-        
-        newFindings[groupName].push({
-          id: `ai-finding-${findingCounter++}`,
-          page: -1,
-          text: firstLine.substring(0, 80) || header,
-          comment: restOfContent || content,
-          category
-        });
       }
-    });
 
-    // If no structured sections found, fall back to simple parsing
-    if (Object.keys(newFindings).length === 0) {
-      console.log("📝 No structured sections found, using fallback parsing");
-      
-      // Simple fallback parsing
-      const paragraphs = analysis.split('\n\n').filter(p => p.trim().length > 30);
-      
-      paragraphs.forEach((paragraph, index) => {
-        const lowerParagraph = paragraph.toLowerCase();
-        let category: "Critical" | "Suggestion" | "Positive" = "Suggestion";
-        let groupName = "AI General Analysis";
-        
-        if (lowerParagraph.includes('risk') || lowerParagraph.includes('critical') || 
-            lowerParagraph.includes('violation') || lowerParagraph.includes('problem')) {
-          category = "Critical";
-          groupName = "AI Critical Issues";
-        } else if (lowerParagraph.includes('recommend') || lowerParagraph.includes('suggest') || 
-                   lowerParagraph.includes('improve') || lowerParagraph.includes('consider')) {
-          category = "Suggestion";
-          groupName = "AI Recommendations";
-        } else if (lowerParagraph.includes('good') || lowerParagraph.includes('positive') || 
-                   lowerParagraph.includes('compliant') || lowerParagraph.includes('well')) {
-          category = "Positive";
-          groupName = "AI Positive Notes";
-        }
-        
-        if (!newFindings[groupName]) newFindings[groupName] = [];
-        
-        const firstSentence = paragraph.split('.')[0] + '.';
-        
-        newFindings[groupName].push({
-          id: `ai-finding-${findingCounter++}`,
-          page: -1,
-          text: firstSentence.substring(0, 80),
-          comment: paragraph,
-          category
-        });
+      // Merge new findings with existing non-AI findings
+      setGroupedFindings({
+        ...filteredFindings,
+        ...newFindings,
       });
-    }
 
-    // Merge new findings with existing non-AI findings
-    setGroupedFindings({
-      ...filteredFindings,
-      ...newFindings
-    });
-    
-    const totalFindings = Object.values(newFindings).flat().length;
-    console.log(`📊 Created ${totalFindings} AI findings across ${Object.keys(newFindings).length} categories`);
-    
-    // Log the categories for debugging
-    Object.entries(newFindings).forEach(([category, findings]) => {
-      console.log(`  - ${category}: ${findings.length} findings`);
-    });
-    
-  } catch (error) {
-    console.error("Error parsing AI analysis:", error);
-  }
-};
+      const totalFindings = Object.values(newFindings).flat().length;
+      console.log(
+        `📊 Created ${totalFindings} AI findings across ${
+          Object.keys(newFindings).length
+        } categories`
+      );
+
+      // Log the categories for debugging
+      Object.entries(newFindings).forEach(([category, findings]) => {
+        console.log(`  - ${category}: ${findings.length} findings`);
+      });
+    } catch (error) {
+      console.error("Error parsing AI analysis:", error);
+    }
+  };
 
   return (
     <div className="h-screen w-full flex flex-col p-4 bg-gray-50 dark:bg-gray-950">
@@ -434,7 +500,8 @@ const parseAIAnalysisToFindings = (analysis: string) => {
               Reviewing document: <span className="font-mono">{pdfFile}</span>
               {contractContent && (
                 <span className="ml-2 text-sm">
-                  ({contractContent.length.toLocaleString()} characters extracted)
+                  ({contractContent.length.toLocaleString()} characters
+                  extracted)
                 </span>
               )}
             </p>
@@ -475,8 +542,12 @@ const parseAIAnalysisToFindings = (analysis: string) => {
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="partnership">Partnership Agreement</SelectItem>
-                    <SelectItem value="employment">Employment Contract</SelectItem>
+                    <SelectItem value="partnership">
+                      Partnership Agreement
+                    </SelectItem>
+                    <SelectItem value="employment">
+                      Employment Contract
+                    </SelectItem>
                     <SelectItem value="service">Service Agreement</SelectItem>
                     <SelectItem value="nda">NDA/Confidentiality</SelectItem>
                     <SelectItem value="general">General Contract</SelectItem>
@@ -491,12 +562,14 @@ const parseAIAnalysisToFindings = (analysis: string) => {
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="review">Full Legal Review</SelectItem>
-                    <SelectItem value="extract">Extract Key Information</SelectItem>
+                    <SelectItem value="extract">
+                      Extract Key Information
+                    </SelectItem>
                   </SelectContent>
                 </Select>
               </div>
             </div>
-            
+
             <div>
               <div className="flex items-center justify-between mb-2">
                 <label className="text-sm font-medium">Contract Content</label>
@@ -539,8 +612,8 @@ const parseAIAnalysisToFindings = (analysis: string) => {
             )}
 
             <div className="flex items-center gap-2">
-              <Button 
-                onClick={handleAIAnalysis} 
+              <Button
+                onClick={handleAIAnalysis}
                 disabled={isAnalyzing || !contractContent.trim()}
                 className="flex items-center gap-2"
               >
@@ -556,13 +629,15 @@ const parseAIAnalysisToFindings = (analysis: string) => {
                   </>
                 )}
               </Button>
-              
+
               {!contractContent.trim() && (
                 <span className="text-sm text-muted-foreground">
-                  {isLoadingText ? "Loading PDF content..." : "Extract PDF text first"}
+                  {isLoadingText
+                    ? "Loading PDF content..."
+                    : "Extract PDF text first"}
                 </span>
               )}
-              
+
               {aiAnalysis?.usage && (
                 <div className="text-sm text-muted-foreground">
                   Tokens used: {aiAnalysis.usage.total_tokens}
@@ -575,12 +650,20 @@ const parseAIAnalysisToFindings = (analysis: string) => {
               <div className="border rounded-lg p-4 bg-gray-50 dark:bg-gray-900">
                 <h4 className="font-medium mb-2">AI Analysis Results:</h4>
                 <div className="text-sm space-y-2 max-h-60 overflow-y-auto">
-                  <pre className="whitespace-pre-wrap text-sm">{aiAnalysis.analysis}</pre>
+                  <pre className="whitespace-pre-wrap text-sm">
+                    {aiAnalysis.analysis}
+                  </pre>
                 </div>
                 <div className="flex items-center gap-4 mt-2 text-xs text-muted-foreground">
-                  <span>Model: {process.env.NEXT_PUBLIC_AI_MODEL || 'anthropic/claude-3.5-sonnet'}</span>
+                  <span>
+                    Model:{" "}
+                    {process.env.NEXT_PUBLIC_AI_MODEL ||
+                      "anthropic/claude-3.5-sonnet"}
+                  </span>
                   <span>Analysis Type: {aiAnalysis.analysisType}</span>
-                  <span>Generated: {new Date(aiAnalysis.timestamp).toLocaleString()}</span>
+                  <span>
+                    Generated: {new Date(aiAnalysis.timestamp).toLocaleString()}
+                  </span>
                 </div>
               </div>
             )}
@@ -614,10 +697,10 @@ const parseAIAnalysisToFindings = (analysis: string) => {
               <CardTitle className="flex items-center gap-2">
                 <AlertCircle />
                 Review Findings
-                <Badge variant="secondary">
-                  {allFindings.length} total
-                </Badge>
-                {Object.keys(groupedFindings).some(key => key.startsWith('AI')) && (
+                <Badge variant="secondary">{allFindings.length} total</Badge>
+                {Object.keys(groupedFindings).some((key) =>
+                  key.startsWith("AI")
+                ) && (
                   <Badge variant="outline" className="ml-2">
                     <Bot className="h-3 w-3 mr-1" />
                     AI Enhanced
@@ -636,7 +719,7 @@ const parseAIAnalysisToFindings = (analysis: string) => {
                     >
                       <AccordionTrigger className="p-4 text-lg font-semibold hover:no-underline">
                         {groupTitle} ({findings.length})
-                        {groupTitle.startsWith('AI') && (
+                        {groupTitle.startsWith("AI") && (
                           <Badge variant="outline" className="ml-2">
                             <Bot className="h-3 w-3 mr-1" />
                             AI
@@ -670,8 +753,16 @@ const parseAIAnalysisToFindings = (analysis: string) => {
                                     {finding.category}
                                   </Badge>
                                   <span>
-                                    {finding.id.startsWith('ai-') ? 'AI Finding' : 'Temuan'} #{finding.id.split("-")[finding.id.split("-").length - 1]} di Hal.{" "}
-                                    {finding.page}
+                                    {finding.id.startsWith("ai-")
+                                      ? "AI Finding"
+                                      : "Temuan"}{" "}
+                                    #
+                                    {
+                                      finding.id.split("-")[
+                                        finding.id.split("-").length - 1
+                                      ]
+                                    }{" "}
+                                    di Hal. {finding.page}
                                   </span>
                                 </div>
                               </AccordionTrigger>
@@ -694,5 +785,13 @@ const parseAIAnalysisToFindings = (analysis: string) => {
         </ResizablePanel>
       </ResizablePanelGroup>
     </div>
+  );
+}
+
+export default function ContractReviewerPage() {
+  return (
+    <ReviewAccess>
+      <ContractReviewerPageContent />
+    </ReviewAccess>
   );
 }
