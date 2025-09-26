@@ -453,24 +453,36 @@ export default function EmploymentPage({
             const isActive = index === currentStep;
             const isCompleted = index < currentStep;
             const circleClass = isActive
-              ? 'bg-transparent border-2 border-blue-600 text-blue-600'
+              ? "bg-transparent border-2 border-blue-600 text-blue-600"
               : isCompleted
-                ? 'bg-blue-600 text-white'
-                : 'bg-gray-200 text-gray-700';
+              ? "bg-blue-600 text-white"
+              : "bg-gray-200 text-gray-700";
             const labelClass = isActive
-              ? 'text-blue-600'
+              ? "text-blue-600"
               : isCompleted
-                ? 'text-blue-600'
-                : 'text-gray-500';
-            const lineClass = index < currentStep ? 'bg-blue-600' : 'bg-gray-200';
+              ? "text-blue-600"
+              : "text-gray-500";
+            const lineClass =
+              index < currentStep ? "bg-blue-600" : "bg-gray-200";
             return (
               <React.Fragment key={index}>
                 <div className="flex flex-col items-center text-center min-w-[70px]">
-                  <div className={`w-9 h-9 rounded-full flex items-center justify-center text-sm font-semibold transition-colors ${circleClass}`}> {index + 1} </div>
-                  <span className={`mt-2 text-[11px] md:text-xs font-medium leading-snug ${labelClass}`}>{step}</span>
+                  <div
+                    className={`w-9 h-9 rounded-full flex items-center justify-center text-sm font-semibold transition-colors ${circleClass}`}
+                  >
+                    {" "}
+                    {index + 1}{" "}
+                  </div>
+                  <span
+                    className={`mt-2 text-[11px] md:text-xs font-medium leading-snug ${labelClass}`}
+                  >
+                    {step}
+                  </span>
                 </div>
                 {index < steps.length - 1 && (
-                  <div className={`flex-1 h-px mx-2 md:mx-4 transition-colors ${lineClass}`} />
+                  <div
+                    className={`flex-1 h-px mx-2 md:mx-4 transition-colors ${lineClass}`}
+                  />
                 )}
               </React.Fragment>
             );
