@@ -1,15 +1,11 @@
-"use client"; // Diperlukan untuk menggunakan useRouter
+"use client";
 
-import { useRouter } from "next/navigation"; // Import useRouter
-import {
-  Accordion,
-  AccordionContent,
-  AccordionItem,
-  AccordionTrigger,
-} from "@/components/ui/accordion";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { useRouter } from "next/navigation";
+import { useState, useEffect, useCallback } from "react";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
+import { Label } from "@/components/ui/label";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -17,233 +13,438 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
-
-// Import ikon dari lucide-react
 import {
   Search,
-  Settings,
-  Clock,
-  HelpCircle,
-  List,
-  Grip,
   ChevronDown,
-  FolderIcon,
-  GripVertical,
-  MoreVertical,
+  FileText,
+  Filter,
+  ArrowUpDown,
+  Loader2
 } from "lucide-react";
 
-// Data tiruan yang diperbarui dengan field baru
-const contracts = [
-  {
-    id: 1,
-    name: "Master Service Agreement",
-    status: "Active",
-    type: "Services",
-    counterParty: "Tech Solutions Inc.",
-    expiryDate: "2026-12-31",
-  },
-  {
-    id: 2,
-    name: "Non-Disclosure Agreement",
-    status: "Archived",
-    type: "Legal",
-    counterParty: "Innovate Co.",
-    expiryDate: "2025-05-20",
-  },
-  {
-    id: 3,
-    name: "Consulting Agreement",
-    status: "Active",
-    type: "Consulting",
-    counterParty: "Growth Partners",
-    expiryDate: "2027-01-15",
-  },
-  {
-    id: 4,
-    name: "Employee Offer Letter",
-    status: "Active",
-    type: "HR",
-    counterParty: "Jane Doe",
-    expiryDate: "N/A",
-  },
-  {
-    id: 5,
-    name: "Partnership Agreement",
-    status: "Archived",
-    type: "Business",
-    counterParty: "Synergy Corp.",
-    expiryDate: "2028-11-01",
-  },
-];
+// TypeScript interfaces
+interface Contract {
+  id: number;
+  name: string;
+  status: string;
+  type: string;
+  counterParty: string;
+  expiryDate: string;
+  startDate: string;
+  owner: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+interface FilterOptions {
+  statusOptions: string[];
+  typeOptions: string[];
+  sortOptions: { value: string; label: string }[];
+}
+
+interface Pagination {
+  page: number;
+  limit: number;
+  totalCount: number;
+  totalPages: number;
+  hasNextPage: boolean;
+  hasPreviousPage: boolean;
+}
 
 export default function DashboardPage() {
-  const router = useRouter(); // Inisialisasi router
+  const router = useRouter();
 
+  // Data states
+  const [contracts, setContracts] = useState<Contract[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [filterOptions, setFilterOptions] = useState<FilterOptions>({
+    statusOptions: [],
+    typeOptions: [],
+    sortOptions: []
+  });
+  const [pagination, setPagination] = useState<Pagination>({
+    page: 1,
+    limit: 20,
+    totalCount: 0,
+    totalPages: 0,
+    hasNextPage: false,
+    hasPreviousPage: false
+  });
+
+  // Filter states
+  const [searchQuery, setSearchQuery] = useState("");
+  const [selectedStatuses, setSelectedStatuses] = useState<string[]>([]);
+  const [selectedTypes, setSelectedTypes] = useState<string[]>([]);
+  const [sortBy, setSortBy] = useState("createdAt");
+  const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc");
+  const [currentPage, setCurrentPage] = useState(1);
+
+  // Debounce search
+  const [debouncedSearch, setDebouncedSearch] = useState(searchQuery);
+  useEffect(() => {
+    const timer = setTimeout(() => setDebouncedSearch(searchQuery), 300);
+    return () => clearTimeout(timer);
+  }, [searchQuery]);
+
+  // Fetch contracts
+  const fetchContracts = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+
+    const params = new URLSearchParams({
+      search: debouncedSearch,
+      status: selectedStatuses.join(','),
+      type: selectedTypes.join(','),
+      sortBy,
+      sortOrder,
+      page: currentPage.toString(),
+      limit: pagination.limit.toString()
+    });
+
+    try {
+      const response = await fetch(`/api/list?${params}`);
+      
+      if (!response.ok) {
+        throw new Error('Failed to fetch contracts');
+      }
+
+      const data = await response.json();
+      
+      if (data.success) {
+        setContracts(data.contracts);
+        setPagination(data.pagination);
+      } else {
+        throw new Error(data.error || 'Failed to fetch contracts');
+      }
+    } catch (err) {
+      console.error('Fetch contracts error:', err);
+      setError(err instanceof Error ? err.message : 'Failed to fetch contracts');
+    } finally {
+      setLoading(false);
+    }
+  }, [debouncedSearch, selectedStatuses, selectedTypes, sortBy, sortOrder, currentPage, pagination.limit]);
+
+  // Fetch filter options
+  const fetchFilterOptions = useCallback(async () => {
+    try {
+      const response = await fetch('/api/list', { method: 'OPTIONS' });
+      if (response.ok) {
+        const data = await response.json();
+        setFilterOptions(data);
+      }
+    } catch (err) {
+      console.error('Failed to fetch filter options:', err);
+    }
+  }, []);
+
+  // Effects
+  useEffect(() => {
+    fetchFilterOptions();
+  }, [fetchFilterOptions]);
+
+  useEffect(() => {
+    fetchContracts();
+  }, [fetchContracts]);
+
+  // Reset to first page when filters change
+  useEffect(() => {
+    if (currentPage !== 1) {
+      setCurrentPage(1);
+    }
+  }, [debouncedSearch, selectedStatuses, selectedTypes, sortBy, sortOrder]);
+
+  // Event handlers
   const handleRowClick = (contractId: number) => {
-    // Arahkan ke halaman detail kontrak
     router.push(`/contracts/${contractId}`);
   };
 
+  const handleStatusFilter = (status: string, checked: boolean) => {
+    if (checked) {
+      setSelectedStatuses(prev => [...prev, status]);
+    } else {
+      setSelectedStatuses(prev => prev.filter(s => s !== status));
+    }
+  };
+
+  const handleTypeFilter = (type: string, checked: boolean) => {
+    if (checked) {
+      setSelectedTypes(prev => [...prev, type]);
+    } else {
+      setSelectedTypes(prev => prev.filter(t => t !== type));
+    }
+  };
+
+  const clearFilters = () => {
+    setSearchQuery("");
+    setSelectedStatuses([]);
+    setSelectedTypes([]);
+    setSortBy("createdAt");
+    setSortOrder("desc");
+    setCurrentPage(1);
+  };
+
+  const getStatusBadgeColor = (status: string) => {
+    switch (status.toLowerCase()) {
+      case "active":
+      case "aktif":
+        return "bg-green-50 text-green-700 border border-green-200";
+      case "draft":
+        return "bg-yellow-50 text-yellow-700 border border-yellow-200";
+      case "archived":
+      case "berakhir":
+        return "bg-red-50 text-red-700 border border-red-200";
+      case "terminated":
+      case "dihentikan":
+        return "bg-red-50 text-red-700 border border-red-200";
+      default:
+        return "bg-gray-50 text-gray-700 border border-gray-200";
+    }
+  };
+
+  const activeFiltersCount = selectedStatuses.length + selectedTypes.length + (debouncedSearch ? 1 : 0);
+
+  if (error) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-gray-50">
+        <div className="text-center">
+          <p className="text-red-600 mb-4">{error}</p>
+          <Button onClick={fetchContracts}>Retry</Button>
+        </div>
+      </div>
+    );
+  }
+
   return (
-    <div className="flex min-h-screen w-full flex-col bg-gray-100/40 dark:bg-gray-800/40">
-      {/* 1. Header Utama */}
-      <header className="flex h-14 items-center gap-4 border-b bg-white px-6 dark:bg-gray-950">
-        <div className="flex-1">
-          <div className="relative w-full max-w-md">
-            <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-gray-500" />
+    <div className="min-h-screen bg-gray-50">
+      <div className="max-w-6xl mx-auto p-6">
+        {/* Header */}
+        <div className="mb-8">
+          <h1 className="text-3xl font-bold text-gray-900 mb-2">Daftar Kontrak</h1>
+        </div>
+
+        {/* Search and Filter Bar */}
+        <div className="flex flex-col sm:flex-row gap-4 mb-6">
+          {/* Search Input */}
+          <div className="relative flex-1">
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
             <Input
               type="search"
-              placeholder="Search..."
-              className="pl-8 w-full"
+              placeholder="Cari kontrak.."
+              className="pl-10 bg-white border-gray-200 focus:border-blue-400 focus:ring-blue-400 rounded-lg h-11"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
             />
           </div>
-        </div>
-      </header>
 
-      {/* Konten Utama */}
-      <main className="flex-1 p-6">
-        {/* Header Konten */}
-        <div className="flex items-center justify-between mb-4">
-          <h1 className="text-2xl font-bold">Contracts</h1>
-        </div>
-
-        {/* Filter Section */}
-        <div className="flex items-center gap-2 mb-4">
-          {/* Filter Status */}
+          {/* Filter Button */}
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="outline">
-                Status <ChevronDown className="ml-2 h-4 w-4" />
+              <Button variant="outline" className="bg-white border-gray-200 hover:bg-gray-50 rounded-lg h-11 px-4">
+                <Filter className="mr-2 h-4 w-4" />
+                Filter
+                {activeFiltersCount > 0 && (
+                  <span className="ml-2 bg-blue-100 text-blue-600 text-xs px-2 py-1 rounded-full">
+                    {activeFiltersCount}
+                  </span>
+                )}
+                <ChevronDown className="ml-2 h-4 w-4" />
               </Button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent>
-              <DropdownMenuItem onSelect={(e) => e.preventDefault()}>
-                <Checkbox id="status-draft" className="mr-2" />
-                <Label htmlFor="status-draft">draft</Label>
-              </DropdownMenuItem>
-              <DropdownMenuItem onSelect={(e) => e.preventDefault()}>
-                <Checkbox id="status-aktif" className="mr-2" />
-                <Label htmlFor="status-aktif">Aktif</Label>
-              </DropdownMenuItem>
-              <DropdownMenuItem onSelect={(e) => e.preventDefault()}>
-                <Checkbox id="status-aktif" className="mr-2" />
-                <Label htmlFor="status-aktif">Aktif</Label>
-              </DropdownMenuItem>
-              <DropdownMenuItem onSelect={(e) => e.preventDefault()}>
-                <Checkbox id="status-aktif" className="mr-2" />
-                <Label htmlFor="status-aktif">Aktif</Label>
-              </DropdownMenuItem>
+            <DropdownMenuContent className="w-64 p-4">
+              <div className="space-y-4">
+                {/* Status Filter */}
+                <div>
+                  <Label className="text-sm font-medium mb-2 block">Status</Label>
+                  <div className="space-y-2">
+                    {filterOptions.statusOptions.map((status) => (
+                      <div key={status} className="flex items-center space-x-2">
+                        <Checkbox
+                          id={`status-${status}`}
+                          checked={selectedStatuses.includes(status)}
+                          onCheckedChange={(checked) => 
+                            handleStatusFilter(status, checked as boolean)
+                          }
+                        />
+                        <Label htmlFor={`status-${status}`} className="capitalize text-sm">
+                          {status}
+                        </Label>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Type Filter */}
+                <div>
+                  <Label className="text-sm font-medium mb-2 block">Type</Label>
+                  <div className="space-y-2">
+                    {filterOptions.typeOptions.map((type) => (
+                      <div key={type} className="flex items-center space-x-2">
+                        <Checkbox
+                          id={`type-${type}`}
+                          checked={selectedTypes.includes(type)}
+                          onCheckedChange={(checked) => 
+                            handleTypeFilter(type, checked as boolean)
+                          }
+                        />
+                        <Label htmlFor={`type-${type}`} className="text-sm">
+                          {type}
+                        </Label>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                {activeFiltersCount > 0 && (
+                  <>
+                    <DropdownMenuSeparator />
+                    <Button 
+                      variant="ghost" 
+                      size="sm" 
+                      onClick={clearFilters}
+                      className="w-full"
+                    >
+                      Clear all filters
+                    </Button>
+                  </>
+                )}
+              </div>
             </DropdownMenuContent>
           </DropdownMenu>
 
-          {/* Filter Tipe */}
+          {/* Sort Button */}
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="outline">
-                Type <ChevronDown className="ml-2 h-4 w-4" />
+              <Button variant="outline" className="bg-white border-gray-200 hover:bg-gray-50 rounded-lg h-11 px-4">
+                <ArrowUpDown className="mr-2 h-4 w-4" />
+                Urutkan
+                <ChevronDown className="ml-2 h-4 w-4" />
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent>
-              <DropdownMenuItem onSelect={(e) => e.preventDefault()}>
-                <Checkbox id="type-employment" className="mr-2" />
-                <Label htmlFor="type-employment">Employment</Label>
-              </DropdownMenuItem>
-              <DropdownMenuItem onSelect={(e) => e.preventDefault()}>
-                <Checkbox id="type-partnership" className="mr-2" />
-                <Label htmlFor="type-partnership">Partnership</Label>
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
-
-          {/* Tombol Sortir */}
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="outline">
-                Sort by <ChevronDown className="ml-2 h-4 w-4" />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent>
-              <DropdownMenuItem>Name</DropdownMenuItem>
-              <DropdownMenuItem>Expiry Date</DropdownMenuItem>
+              {filterOptions.sortOptions.map((option) => (
+                <DropdownMenuItem 
+                  key={option.value} 
+                  onSelect={() => setSortBy(option.value)}
+                  className={sortBy === option.value ? "bg-blue-50" : ""}
+                >
+                  {option.label}
+                </DropdownMenuItem>
+              ))}
               <DropdownMenuSeparator />
               <DropdownMenuItem onSelect={(e) => e.preventDefault()}>
-                <Checkbox id="sort-desc" className="mr-2" />
+                <Checkbox
+                  id="sort-desc"
+                  className="mr-2"
+                  checked={sortOrder === "desc"}
+                  onCheckedChange={(checked) => setSortOrder(checked ? "desc" : "asc")}
+                />
                 <Label htmlFor="sort-desc">Descending</Label>
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
         </div>
 
-        {/* Tabel Konten */}
-        <div className="rounded-lg border bg-white">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead className="w-[50px]">
-                  <Checkbox />
-                </TableHead>
-                <TableHead>Name</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead>Type</TableHead>
-                <TableHead>Counterparty</TableHead>
-                <TableHead>Expiry Date</TableHead>
-                <TableHead className="text-right">Actions</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {contracts.map((contract) => (
-                <TableRow
+        {/* Contract List Header */}
+        <div className="bg-white rounded-lg border border-gray-200 mb-4">
+          <div className="grid grid-cols-12 gap-4 p-4 bg-gray-50 rounded-t-lg border-b border-gray-200 text-sm font-medium text-gray-700">
+            <div className="col-span-4">Nama dokumen</div>
+            <div className="col-span-2">Status</div>
+            <div className="col-span-3">Counterparty</div>
+            <div className="col-span-3">Jatuh tempo</div>
+          </div>
+
+          {/* Contract List */}
+          <div className="divide-y divide-gray-200">
+            {loading ? (
+              <div className="flex items-center justify-center py-12">
+                <Loader2 className="h-6 w-6 animate-spin text-blue-600 mr-2" />
+                <span className="text-gray-600">Loading contracts...</span>
+              </div>
+            ) : contracts.length === 0 ? (
+              <div className="text-center py-12 text-gray-500">
+                <FileText className="h-12 w-12 mx-auto mb-4 text-gray-300" />
+                <p className="text-lg font-medium mb-2">No contracts found</p>
+                <p className="text-sm">Try adjusting your search or filter criteria</p>
+                {activeFiltersCount > 0 && (
+                  <Button variant="link" onClick={clearFilters} className="mt-2">
+                    Clear all filters
+                  </Button>
+                )}
+              </div>
+            ) : (
+              contracts.map((contract) => (
+                <div
                   key={contract.id}
-                  className="cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700"
+                  className="grid grid-cols-12 gap-4 p-4 hover:bg-gray-50 cursor-pointer transition-colors relative"
                   onClick={() => handleRowClick(contract.id)}
                 >
-                  <TableCell>
-                    <Checkbox onClick={(e) => e.stopPropagation()} />
-                  </TableCell>
-                  <TableCell className="font-medium flex items-center gap-2">
-                    <GripVertical className="h-4 w-4 text-gray-400" />
-                    <FolderIcon className="h-5 w-5 text-gray-600" />
-                    {contract.name}
-                  </TableCell>
-                  <TableCell>
-                    <span
-                      className={`px-2 py-1 text-xs rounded-full ${
-                        contract.status === "Active"
-                          ? "bg-green-100 text-green-800"
-                          : "bg-gray-100 text-gray-800"
-                      }`}
-                    >
+                 
+                  {/* Document Icon & Name */}
+                  <div className="col-span-4 flex items-center">
+                    <div className="bg-gray-100 p-2 rounded-lg mr-3">
+                      <FileText className="h-5 w-5 text-gray-600" />
+                    </div>
+                    <span className="font-medium text-gray-900 truncate">
                       {contract.name}
                     </span>
-                  </TableCell>
-                  <TableCell>{contract.type}</TableCell>
-                  <TableCell>{contract.counterParty}</TableCell>
-                  <TableCell>{contract.expiryDate}</TableCell>
-                  <TableCell className="text-right">
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      onClick={(e) => e.stopPropagation()}
-                    >
-                      <MoreVertical className="h-4 w-4" />
-                    </Button>
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
+                  </div>
+
+                  {/* Status */}
+                  <div className="col-span-2 flex items-center">
+                    <span className={`px-3 py-1 text-sm rounded-full capitalize ${getStatusBadgeColor(contract.status)}`}>
+                      {contract.status}
+                    </span>
+                  </div>
+
+                  {/* Counterparty */}
+                  <div className="col-span-3 flex items-center">
+                    <span className="text-gray-900 truncate">
+                      {contract.counterParty}
+                    </span>
+                  </div>
+
+                  {/* Expiry Date */}
+                  <div className="col-span-3 flex items-center">
+                    <span className="text-gray-600">
+                      {contract.expiryDate}
+                    </span>
+                  </div>
+                </div>
+              ))
+            )}
+          </div>
         </div>
-      </main>
+
+        {/* Pagination */}
+        {!loading && contracts.length > 0 && (
+          <div className="flex items-center justify-between">
+            <div className="text-sm text-gray-600">
+              Showing {((pagination.page - 1) * pagination.limit) + 1} to {Math.min(pagination.page * pagination.limit, pagination.totalCount)} of {pagination.totalCount} contracts
+            </div>
+            <div className="flex gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                disabled={!pagination.hasPreviousPage}
+                onClick={() => setCurrentPage(prev => prev - 1)}
+                className="bg-white border-gray-200 hover:bg-gray-50"
+              >
+                Previous
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                disabled={!pagination.hasNextPage}
+                onClick={() => setCurrentPage(prev => prev + 1)}
+                className="bg-white border-gray-200 hover:bg-gray-50"
+              >
+                Next
+              </Button>
+            </div>
+          </div>
+        )}
+      </div>
     </div>
   );
 }
