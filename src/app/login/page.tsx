@@ -39,7 +39,7 @@ export default function LoginPage() {
 
       if (data.success) {
         console.log("Login successful!", data.user);
-        router.push("/");
+        router.push("/dashboard");
       }
 
     } catch (err) {
