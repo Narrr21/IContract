@@ -7,6 +7,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 export default function RegisterPage() {
   const router = useRouter();
@@ -15,6 +16,7 @@ export default function RegisterPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
+  const [role, setRole] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
 
@@ -25,6 +27,12 @@ export default function RegisterPage() {
 
     if (password !== confirmPassword) {
       setError("Passwords do not match. Please try again.");
+      setIsLoading(false);
+      return;
+    }
+
+    if (!role) {
+      setError("Please select a role.");
       setIsLoading(false);
       return;
     }
@@ -42,6 +50,7 @@ export default function RegisterPage() {
           email: email,
           password: password,
           confirmpassword: confirmPassword,
+          role: role,
         }),
       });
 
@@ -55,8 +64,9 @@ export default function RegisterPage() {
       if (data.success) {
         console.log("Registration successful!", data.user);
 
-        // Redirect to dashboard since user is now logged in
-        router.push("/dashboard");
+        // Redirect to login page after successful registration
+        alert("Akun berhasil dibuat!");
+        router.push("/login");
       }
     } catch (err: any) {
       console.error("Registration error:", err);
@@ -191,6 +201,30 @@ export default function RegisterPage() {
                 disabled={isLoading}
                 className="w-full h-12 px-4 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
               />
+            </div>
+
+            <div>
+              <label
+                htmlFor="role"
+                className="block text-sm font-medium text-gray-700 mb-1"
+              >
+                Role
+              </label>
+              <Select 
+                value={role} 
+                onValueChange={setRole}
+                disabled={isLoading}
+              >
+                <SelectTrigger className="w-full h-12 px-4 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                  <SelectValue placeholder="Pilih role Anda" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="admin">Admin</SelectItem>
+                  <SelectItem value="hr">HR (Pembuat Kontrak)</SelectItem>
+                  <SelectItem value="legal">Tim Legal</SelectItem>
+                  <SelectItem value="management">Management</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
 
             {error && (

@@ -1,28 +1,33 @@
 import { NextRequest, NextResponse } from "next/server";
+import { prisma } from "@/lib/db";
+import jwt from "jsonwebtoken";
 
 export async function GET(request: NextRequest) {
   try {
-    // For demo purposes, return mock data directly
-    // In production, this would fetch from database with authentication
+    // Get the auth token from cookies
+    const token = request.cookies.get("auth-token")?.value;
     
-    const mockUser = {
-      id: 1,
-      email: "ahmad.wijaya@company.com",
-      firstname: "Ahmad",
-      lastname: "Wijaya",
-      category: "ADMIN",
-      profilepath: "/images/default-avatar.png",
-      createdAt: new Date('2020-01-15'),
-      updatedAt: new Date()
-    };
+    if (!token) {
+      return NextResponse.json(
+        { error: "Unauthorized - No token provided" },
+        { status: 401 }
+      );
+    }
 
-    // Uncomment below for real database implementation:
-    /*
-    const { prisma } = await import("@/lib/db");
-    const userId = 1; // Get from authenticated session
-    
+    // Verify and decode the JWT token
+    let decoded: any;
+    try {
+      decoded = jwt.verify(token, process.env.JWT_SECRET || "your-secret-key");
+    } catch (err) {
+      return NextResponse.json(
+        { error: "Unauthorized - Invalid token" },
+        { status: 401 }
+      );
+    }
+
+    // Get user from database
     const user = await prisma.user.findUnique({
-      where: { id: userId },
+      where: { id: decoded.userId },
       select: {
         id: true,
         email: true,
@@ -34,9 +39,6 @@ export async function GET(request: NextRequest) {
         updatedAt: true
       }
     });
-    */
-
-    const user = mockUser;
 
     if (!user) {
       return NextResponse.json(

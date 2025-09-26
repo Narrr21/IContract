@@ -6,13 +6,13 @@ import { UserCategory } from "@prisma/client";
 
 export async function POST(req: NextRequest) {
   try {
-    const { firstname, lastname, email, password, confirmpassword } =
+    const { firstname, lastname, email, password, confirmpassword, role } =
       await req.json();
 
-    console.log("📝 Registration attempt:", { firstname, lastname, email }); // Debug log
+    console.log("📝 Registration attempt:", { firstname, lastname, email, role }); // Debug log
 
     // Validation
-    if (!firstname || !lastname || !email || !password || !confirmpassword) {
+    if (!firstname || !lastname || !email || !password || !confirmpassword || !role) {
       return NextResponse.json(
         { error: "All fields are required" },
         { status: 400 }
@@ -22,6 +22,22 @@ export async function POST(req: NextRequest) {
     if (password !== confirmpassword) {
       return NextResponse.json(
         { error: "Passwords do not match" },
+        { status: 400 }
+      );
+    }
+
+    // Map role to UserCategory
+    const roleMapping: { [key: string]: UserCategory } = {
+      admin: UserCategory.ADMIN,
+      hr: UserCategory.HR,
+      legal: UserCategory.LEGAL,
+      management: UserCategory.MANAGEMENT,
+    };
+
+    const userCategory = roleMapping[role];
+    if (!userCategory) {
+      return NextResponse.json(
+        { error: "Invalid role selected" },
         { status: 400 }
       );
     }
@@ -49,7 +65,7 @@ export async function POST(req: NextRequest) {
         email,
         firstname,
         lastname,
-        category: UserCategory.ADMIN,
+        category: userCategory,
         password: hashedPassword,
         profilepath,
       },
@@ -57,18 +73,8 @@ export async function POST(req: NextRequest) {
 
     console.log("✅ User created successfully:", user.id); // Debug log
 
-    const token = jwt.sign(
-      {
-        userId: user.id,
-        email: user.email,
-        category: user.category,
-      },
-      process.env.JWT_SECRET || "your-secret-key",
-      { expiresIn: "7d" }
-    );
-
-    // Create response with token in cookie (consistent with login)
-    const response = NextResponse.json({
+    // Return success response without auto-login
+    return NextResponse.json({
       message: "Registration successful",
       success: true,
       user: {
@@ -79,16 +85,6 @@ export async function POST(req: NextRequest) {
         category: user.category,
       },
     });
-
-    // Set auth token cookie (consistent with login API)
-    response.cookies.set("auth-token", token, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
-      sameSite: "lax",
-      maxAge: 60 * 60 * 24 * 7, // 7 days
-    });
-
-    return response;
   } catch (error) {
     console.error("❌ Registration error:", error);
 
