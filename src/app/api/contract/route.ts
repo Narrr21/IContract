@@ -323,3 +323,83 @@ export async function POST(request: Request) {
     );
   }
 }
+
+// PATCH /api/contract?id=123 -> update contract status
+export async function PATCH(request: Request) {
+  try {
+    const { searchParams } = new URL(request.url);
+    const id = searchParams.get("id");
+    
+    if (!id) {
+      return NextResponse.json(
+        { success: false, error: "Contract ID is required" },
+        { status: 400 }
+      );
+    }
+
+    const numericId = Number(id);
+    if (Number.isNaN(numericId)) {
+      return NextResponse.json(
+        { success: false, error: "Invalid contract ID" },
+        { status: 400 }
+      );
+    }
+
+    const body = await request.json();
+    const { status } = body;
+
+    if (!status) {
+      return NextResponse.json(
+        { success: false, error: "Status is required" },
+        { status: 400 }
+      );
+    }
+
+    // Validate status values
+    const validStatuses = ['draft', 'aktif', 'berakhir', 'dihentikan'];
+    if (!validStatuses.includes(status)) {
+      return NextResponse.json(
+        { success: false, error: "Invalid status value" },
+        { status: 400 }
+      );
+    }
+
+    // Check if contract exists
+    const existingContract = await prisma.contract.findUnique({
+      where: { id: numericId }
+    });
+
+    if (!existingContract) {
+      return NextResponse.json(
+        { success: false, error: "Contract not found" },
+        { status: 404 }
+      );
+    }
+
+    // Update contract status
+    const updatedContract = await prisma.contract.update({
+      where: { id: numericId },
+      data: { status }
+    });
+
+    return NextResponse.json({
+      success: true,
+      message: "Contract status updated successfully",
+      contract: {
+        id: updatedContract.id,
+        status: updatedContract.status
+      }
+    });
+
+  } catch (error) {
+    console.error("Error updating contract status:", error);
+    return NextResponse.json(
+      {
+        success: false,
+        error: "Failed to update contract status",
+        details: error instanceof Error ? error.message : "Unknown error",
+      },
+      { status: 500 }
+    );
+  }
+}
