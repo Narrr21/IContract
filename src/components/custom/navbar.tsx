@@ -27,7 +27,7 @@ export function Navbar() {
 
     const fetchUser = async () => {
       try {
-        const response = await fetch("/api/me");
+        const response = await fetch("/api/account");
         if (response.ok) {
           const data = await response.json();
           setUser(data.user);
