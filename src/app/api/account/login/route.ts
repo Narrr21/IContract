@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import bcrypt from "bcryptjs";
+import jwt from "jsonwebtoken";
 
 export async function POST(req: NextRequest) {
   try {
@@ -26,7 +27,7 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // Verify password (fixed field name)
+    // Verify password
     const passwordMatch = await bcrypt.compare(password, user.password);
 
     if (!passwordMatch) {
@@ -36,26 +37,39 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // Check if user needs verification
-    if (!user.verified) {
-      return NextResponse.json({
-        requiresVerification: true,
+    // Create JWT token
+    const token = jwt.sign(
+      { 
         userId: user.id,
-        message: "Please verify your account"
-      });
-    }
+        email: user.email,
+        category: user.category
+      },
+      process.env.JWT_SECRET || 'your-secret-key',
+      { expiresIn: '7d' }
+    );
 
-    // Login successful
-    return NextResponse.json({
+    // Create response with token in cookie
+    const response = NextResponse.json({
       success: true,
       user: {
         id: user.id,
         email: user.email,
-        name: user.name,
-        verified: user.verified
+        firstname: user.firstname,
+        lastname: user.lastname,
+        category: user.category
       },
       message: "Login successful"
     });
+
+    // Set HTTP-only cookie
+    response.cookies.set('auth-token', token, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'lax',
+      maxAge: 60 * 60 * 24 * 7 // 7 days
+    });
+
+    return response;
 
   } catch (error) {
     console.error("Login error:", error);
