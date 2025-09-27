@@ -876,21 +876,40 @@ export default function CreateContractPage() {
                 <div className="grid md:grid-cols-2 gap-8 mb-8">
                   {/* Partnership Contract */}
                   <Card
-                    className={`my-auto cursor-pointer border-2 hover:border-blue-500 hover:bg-blue-50 transition-all duration-300 ${
+                    className={`my-auto cursor-pointer border-2 transition-all duration-300 ${
                       selectedContractType === "partnership"
-                        ? "border-blue-500 bg-blue-50"
-                        : ""
+                        ? "border-[#3D74EA] bg-[#E5EDFF]"
+                        : "border-gray-200 hover:border-[#3D74EA] hover:bg-[#E5EDFF]"
                     }`}
                     onClick={() => setSelectedContractType("partnership")}
                   >
                     <CardContent className="p-8 text-center">
-                      <div className="mb-6 mx-auto h-[30%] w-fit">
-                        <img src="/kerjasama.svg" alt="" />
+                      <div className="mb-6 mx-auto w-fit h-[30%]">
+                        <img
+                          src={
+                            selectedContractType === "partnership"
+                              ? "/kerjasama-biru.svg"
+                              : "/kerjasama.svg"
+                          }
+                          alt="ikon kerjasama"
+                        />
                       </div>
-                      <h3 className="font-bold text-xl mb-3 text-gray-900">
+                      <h3
+                        className={`font-bold text-xl mb-3 ${
+                          selectedContractType === "partnership"
+                            ? "text-[#3D74EA]"
+                            : "text-gray-900"
+                        }`}
+                      >
                         Kerja Sama
                       </h3>
-                      <p className="text-gray-600 mb-4">
+                      <p
+                        className={`mb-4 ${
+                          selectedContractType === "partnership"
+                            ? "text-[#3D74EA]"
+                            : "text-gray-600"
+                        }`}
+                      >
                         Perjanjian kerja sama antar pihak
                       </p>
                     </CardContent>
@@ -898,22 +917,41 @@ export default function CreateContractPage() {
 
                   {/* Employment Contract */}
                   <Card
-                    className={`my-auto cursor-pointer border-2 hover:border-blue-500 hover:bg-blue-50 transition-all duration-300 ${
+                    className={`my-auto cursor-pointer border-2 transition-all duration-300 ${
                       selectedContractType === "employment"
-                        ? "border-blue-500 bg-blue-50"
-                        : ""
+                        ? "border-[#3D74EA] bg-[#E5EDFF]"
+                        : "border-gray-200 hover:border-[#3D74EA] hover:bg-[#E5EDFF]"
                     }`}
                     onClick={() => setSelectedContractType("employment")}
                   >
                     <CardContent className="p-8 text-center">
                       <div className="mb-6 w-fit h-[30%] mx-auto">
-                        <img src="/brief.svg" alt="" />
+                        <img
+                          src={
+                            selectedContractType === "employment"
+                              ? "/brief-biru.svg"
+                              : "/brief.svg"
+                          }
+                          alt="ikon kerja"
+                        />
                       </div>
-                      <h3 className="font-bold text-xl mb-3 text-gray-900">
+                      <h3
+                        className={`font-bold text-xl mb-3 ${
+                          selectedContractType === "employment"
+                            ? "text-[#3D74EA]"
+                            : "text-gray-900"
+                        }`}
+                      >
                         Kerja
                       </h3>
-                      <p className="text-gray-600 mb-4">
-                        Perjanjian antara perusahaan dan pegawai
+                      <p
+                        className={`mb-4 ${
+                          selectedContractType === "employment"
+                            ? "text-[#3D74EA]"
+                            : "text-gray-600"
+                        }`}
+                      >
+                        Perjanjian kerja antara perusahaan dan pegawai
                       </p>
                     </CardContent>
                   </Card>
