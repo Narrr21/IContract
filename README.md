@@ -34,8 +34,8 @@ email:      {peran}@example.com
 password:   password123
 ```
 dengan {peran} diganti dengan akun hr/admin/legal/manajemen
-
-## Anggota Tim
+1. hr : hanya bisa melihat list of contracts dan buat kontrak dimana ada 2 jenis kontrak dan 2 jenis cara pengisian. hr berhak memilih caranya dan mengisikan sesuai permintaan, selanjutnya disimpan dalam database.<img width="1885" height="874" alt="image" src="https://github.com/user-attachments/assets/0b83c87d-4c97-4725-981b-243839f818ba" />
+2. 
 
 |  Pesona5 ||
 |:-------:|-|
