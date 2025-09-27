@@ -1,36 +1,44 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# IContract
+## Aplikasi manajemen kontrak berbasis A.I.
+Aplikasi ini menyediakan berbagai macam fitur seperti pembuatan kontrak, review kontrak, edit kontrak, dan scan kontrak dengan bantuan AI
 
-## Getting Started
 
-First, run the development server:
+## Cara menjalankan program
+Aplikasi ini merupakan aplikasi berbasis web yang sudah deploy pada [link ini](https://icontract-production.up.railway.app)
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+Namun apabila ingin menjalankannya secara lokal, dapat melakukan langkah-langkah sebagai berikut:
+
+1. Clone repository github ini
+
+2. cd ke direktori repository github yang sudah di-clone
+
+3. `npm install` untuk install dependency
+
+4. `npx prisma generate` untuk menginisialisasi database
+
+5. `npm run dev` untuk menjalankan aplikasi secara lokal di `localhost:3000`
+
+## Cara menggunakan program
+Pengguna perlu login sebagai hr, admin, legal, atau manajemen. Masing-masing akun memiliki perannya masing-masing sebagai berikut:
+
+- hr: Membuat dan enyusun kontrak
+- admin: Manajemen akun
+- legal: Review kontrak
+- manajemen: Melihat keseluruhan kontrak yang ada
+
+Pengguna bisa login menggunakan akun:
 ```
+email:      {peran}@example.com
+password:   password123
+```
+dengan {peran} diganti dengan akun hr/admin/legal/manajemen
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## Anggota Tim
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
-
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
-
-## Learn More
-
-To learn more about Next.js, take a look at the following resources:
-
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+|  Pesona5 ||
+|:-------:|-|
+|Wardatul Khoiroh | 13523001 |
+| Angelina Efrina Prahastaputri| 13523060 |
+| Sebastian Hung Yansen | 13523070 |
+|Nadhif Al Rozin | 13523076 |
+| Ni Made Sekar Jelita Parameswari | 18223101
