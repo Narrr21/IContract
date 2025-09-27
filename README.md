@@ -1,3 +1,5 @@
+![icontract](Logo.png)
+
 # IContract
 ## Aplikasi manajemen kontrak berbasis A.I.
 Aplikasi ini menyediakan berbagai macam fitur seperti pembuatan kontrak, review kontrak, edit kontrak, dan scan kontrak dengan bantuan AI
