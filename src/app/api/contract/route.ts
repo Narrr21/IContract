@@ -3,6 +3,9 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import jwt from "jsonwebtoken";
+import path from "path";
+import { promises as fs } from "fs";
+import {  } from "@/app/api/generate-pdf/route"
 
 // GET /api/contract?id=123  -> single contract (with details)
 // GET /api/contract          -> list all contracts (basic data)
@@ -97,6 +100,64 @@ export async function POST(request: Request) {
     console.log("📥 Received contract data:", data);
 
     // Check if it's an employment contract
+    // Helper to adopt uploaded PDF -> rename uploaded-<timestamp>-*.pdf to {id}.pdf
+    async function adoptUploadedPdf(
+      contractId: number,
+      uploadedFileName?: string
+    ) {
+      if (!uploadedFileName) {
+        console.log("ℹ️ No uploadedFileName provided; skipping PDF adoption");
+        return { pdfRenamed: false };
+      }
+      try {
+        // Security: ensure no path traversal & matches expected pattern
+        if (uploadedFileName.includes("/") || uploadedFileName.includes("..")) {
+          console.warn(
+            "⚠️ Rejecting suspicious uploadedFileName",
+            uploadedFileName
+          );
+          return { pdfRenamed: false, warning: "Invalid file name" };
+        }
+        if (!uploadedFileName.startsWith("uploaded-")) {
+          console.warn(
+            "⚠️ uploadedFileName does not have expected prefix",
+            uploadedFileName
+          );
+          return { pdfRenamed: false, warning: "Unexpected file name format" };
+        }
+        const contractDir = path.join(process.cwd(), "public", "contract");
+        const tempPath = path.join(contractDir, uploadedFileName);
+        const finalPath = path.join(contractDir, `${contractId}.pdf`);
+        // Check existence
+        try {
+          await fs.access(tempPath);
+        } catch {
+          console.warn("⚠️ Temp uploaded file not found:", tempPath);
+          return { pdfRenamed: false, warning: "Temp file not found" };
+        }
+        // If a file already exists at finalPath, back it up (very unlikely on create)
+        let backupMade = false;
+        try {
+          await fs.access(finalPath);
+          const backupPath = path.join(
+            contractDir,
+            `${contractId}-backup-${Date.now()}.pdf`
+          );
+          await fs.rename(finalPath, backupPath);
+          backupMade = true;
+          console.log(`🗂️ Existing target PDF moved to backup ${backupPath}`);
+        } catch {
+          // no existing file, proceed
+        }
+        await fs.rename(tempPath, finalPath);
+        console.log(`✅ Uploaded PDF adopted as ${contractId}.pdf`);
+        return { pdfRenamed: true, pdfFile: `${contractId}.pdf`, backupMade };
+      } catch (err) {
+        console.error("❌ Failed to adopt uploaded PDF:", err);
+        return { pdfRenamed: false, error: (err as Error).message };
+      }
+    }
+
     if (data.type === "employment") {
       console.log("🏢 Creating employment contract...");
 
@@ -198,10 +259,20 @@ export async function POST(request: Request) {
           : null,
       };
 
+      if (!data.uploadedFileName) {
+        data.uploadedFileName = data.kontrakid;
+      }
+      // Attempt to adopt uploaded PDF if provided
+      const pdfResult = await adoptUploadedPdf(
+        contract.id,
+        data.uploadedFileName
+      );
+
       return NextResponse.json({
         success: true,
         contract: serializedContract,
         message: "Employment contract created successfully",
+        pdf: pdfResult,
       });
     } else {
       // Handle partnership contracts (existing code)
@@ -305,11 +376,20 @@ export async function POST(request: Request) {
             }
           : null,
       };
+      if (!data.uploadedFileName) {
+        data.uploadedFileName = data.kontrakid;
+      }
+      // Attempt to adopt uploaded PDF if provided
+      const pdfResult = await adoptUploadedPdf(
+        contract.id,
+        data.uploadedFileName
+      );
 
       return NextResponse.json({
         success: true,
         contract: serializedContract,
         message: "Partnership contract created successfully",
+        pdf: pdfResult,
       });
     }
   } catch (error) {

@@ -37,7 +37,7 @@ import {
 import { format } from "date-fns";
 import { calculateEndDate } from "@/lib/helper";
 import { createContractWithDetails } from "@/lib/contractHelpers";
-import PreviewContract from '@/components/PreviewContract'
+import PreviewContract from "@/components/PreviewContract";
 
 interface EmploymentContractData {
   // Informasi Umum Perjanjian
@@ -84,6 +84,7 @@ interface EmploymentPageProps {
   initialFile?: File | null;
   initialExtractedData?: EmploymentContractData | null;
   onReset?: () => void; // callback ke parent untuk reset state
+  uploadedServerFileName?: string; // server stored uploaded file name
 }
 
 export default function EmploymentPage({
@@ -91,6 +92,7 @@ export default function EmploymentPage({
   initialFile,
   initialExtractedData,
   onReset,
+  uploadedServerFileName,
 }: EmploymentPageProps) {
   const router = useRouter();
   const [currentStep, setCurrentStep] = useState(initialInputMethod ? 1 : 0);
@@ -351,7 +353,7 @@ export default function EmploymentPage({
       }
 
       // Prepare the data for API call - using ONLY the fields that exist in the Employment schema
-      const apiData = {
+      const apiData: any = {
         type: "employment",
         // Main contract fields
         namakontrak: contractData.judul,
@@ -397,6 +399,10 @@ export default function EmploymentPage({
         sanksi: contractData.sanksi,
         pemutusanhubungankerja: contractData.pemutusanHubunganKerja,
       };
+
+      if (uploadedServerFileName) {
+        apiData.uploadedFileName = uploadedServerFileName;
+      }
 
       console.log("🚀 Sending employment contract data:", apiData);
 
@@ -448,618 +454,632 @@ export default function EmploymentPage({
           </p>
         </div>
 
-      {/* Progress Steps */}
-      <div className="mb-8 bg-white p-6 rounded-lg shadow-sm border border-gray-100">
-        <div className="flex items-center justify-between">
-          {steps.map((step, index) => {
-            const isActive = index === currentStep;
-            const isCompleted = index < currentStep;
-            const circleClass = isActive
-              ? "bg-blue-500 text-white shadow-lg"
-              : isCompleted
-              ? "bg-green-500 text-white"
-              : "bg-gray-100 text-gray-500 border border-gray-200";
-            const labelClass = isActive
-              ? "text-blue-600 font-semibold"
-              : isCompleted
-              ? "text-green-600 font-medium"
-              : "text-gray-400";
-            const lineClass =
-              index < currentStep ? "bg-green-400" : "bg-gray-200";
-            return (
-              <React.Fragment key={index}>
-                <div className="flex flex-col items-center text-center min-w-[80px]">
-                  <div
-                    className={`w-10 h-10 rounded-full flex items-center justify-center text-sm font-bold transition-all duration-200 ${circleClass}`}
-                  >
-                    {isCompleted ? "✓" : index + 1}
+        {/* Progress Steps */}
+        <div className="mb-8 bg-white p-6 rounded-lg shadow-sm border border-gray-100">
+          <div className="flex items-center justify-between">
+            {steps.map((step, index) => {
+              const isActive = index === currentStep;
+              const isCompleted = index < currentStep;
+              const circleClass = isActive
+                ? "bg-blue-500 text-white shadow-lg"
+                : isCompleted
+                ? "bg-green-500 text-white"
+                : "bg-gray-100 text-gray-500 border border-gray-200";
+              const labelClass = isActive
+                ? "text-blue-600 font-semibold"
+                : isCompleted
+                ? "text-green-600 font-medium"
+                : "text-gray-400";
+              const lineClass =
+                index < currentStep ? "bg-green-400" : "bg-gray-200";
+              return (
+                <React.Fragment key={index}>
+                  <div className="flex flex-col items-center text-center min-w-[80px]">
+                    <div
+                      className={`w-10 h-10 rounded-full flex items-center justify-center text-sm font-bold transition-all duration-200 ${circleClass}`}
+                    >
+                      {isCompleted ? "✓" : index + 1}
+                    </div>
+                    <span
+                      className={`mt-3 text-xs font-medium leading-tight max-w-[70px] ${labelClass}`}
+                    >
+                      {step}
+                    </span>
                   </div>
-                  <span
-                    className={`mt-3 text-xs font-medium leading-tight max-w-[70px] ${labelClass}`}
-                  >
-                    {step}
-                  </span>
-                </div>
-                {index < steps.length - 1 && (
-                  <div
-                    className={`flex-1 h-0.5 mx-3 transition-all duration-200 ${lineClass}`}
-                  />
-                )}
-              </React.Fragment>
-            );
-          })}
+                  {index < steps.length - 1 && (
+                    <div
+                      className={`flex-1 h-0.5 mx-3 transition-all duration-200 ${lineClass}`}
+                    />
+                  )}
+                </React.Fragment>
+              );
+            })}
+          </div>
         </div>
-      </div>
 
-      {/* Step Content */}
-      <Card className="bg-white shadow-sm border border-gray-100">
-        <CardHeader className="bg-gray-50 border-b border-gray-100">
-          <CardTitle className="text-xl text-gray-800">{steps[currentStep]}</CardTitle>
-          <CardDescription className="text-gray-600">
-            {currentStep === 0 && "Pilih cara mengisi kontrak kerja"}
-            {currentStep === 1 && "Informasi umum perjanjian kerja"}
-            {currentStep === 2 && "Data lengkap identitas pegawai"}
-            {currentStep === 3 && "Tanggung jawab dan ketentuan kerja"}
-            {currentStep === 4 && "Hak, gaji, dan fasilitas"}
-            {currentStep === 5 && "Perlindungan hukum dan kerahasiaan"}
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="p-6">
-          {/* Step 1: Informasi Umum */}
-          {currentStep === 1 && (
-            <div className="space-y-6">
-              {initialExtractedData && (
-                <div className="p-4 bg-green-50 border border-green-200 rounded-lg">
-                  <div className="flex items-center">
-                    <CheckCircle className="w-5 h-5 text-green-600 mr-2" />
-                    <p className="text-green-800 font-medium">
-                      Data telah diisi otomatis dari dokumen PDF yang di-upload
+        {/* Step Content */}
+        <Card className="bg-white shadow-sm border border-gray-100">
+          <CardHeader className="bg-gray-50 border-b border-gray-100">
+            <CardTitle className="text-xl text-gray-800">
+              {steps[currentStep]}
+            </CardTitle>
+            <CardDescription className="text-gray-600">
+              {currentStep === 0 && "Pilih cara mengisi kontrak kerja"}
+              {currentStep === 1 && "Informasi umum perjanjian kerja"}
+              {currentStep === 2 && "Data lengkap identitas pegawai"}
+              {currentStep === 3 && "Tanggung jawab dan ketentuan kerja"}
+              {currentStep === 4 && "Hak, gaji, dan fasilitas"}
+              {currentStep === 5 && "Perlindungan hukum dan kerahasiaan"}
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="p-6">
+            {/* Step 1: Informasi Umum */}
+            {currentStep === 1 && (
+              <div className="space-y-6">
+                {initialExtractedData && (
+                  <div className="p-4 bg-green-50 border border-green-200 rounded-lg">
+                    <div className="flex items-center">
+                      <CheckCircle className="w-5 h-5 text-green-600 mr-2" />
+                      <p className="text-green-800 font-medium">
+                        Data telah diisi otomatis dari dokumen PDF yang
+                        di-upload
+                      </p>
+                    </div>
+                    <p className="text-green-600 text-sm mt-1">
+                      Anda dapat mengedit data sesuai kebutuhan.
                     </p>
                   </div>
-                  <p className="text-green-600 text-sm mt-1">
-                    Anda dapat mengedit data sesuai kebutuhan.
-                  </p>
-                </div>
-              )}
+                )}
 
-              <div className="grid md:grid-cols-2 gap-6">
+                <div className="grid md:grid-cols-2 gap-6">
+                  <div>
+                    <Label htmlFor="nomorKontrak">Nomor Kontrak</Label>
+                    <Input
+                      id="nomorKontrak"
+                      value={contractData.nomorKontrak}
+                      onChange={(e) =>
+                        handleInputChange("nomorKontrak", e.target.value)
+                      }
+                      placeholder="Masukkan nomor kontrak kerja"
+                      disabled={isFieldDisabled()}
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="jenis">Jenis Kontrak</Label>
+                    <Select
+                      value={contractData.jenis}
+                      onValueChange={(value) =>
+                        handleInputChange("jenis", value)
+                      }
+                      disabled={isFieldDisabled()}
+                    >
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="EMPLOYMENT">Employment</SelectItem>
+                        <SelectItem value="FREELANCE">Freelance</SelectItem>
+                        <SelectItem value="INTERNSHIP">Internship</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+
                 <div>
-                  <Label htmlFor="nomorKontrak">Nomor Kontrak</Label>
+                  <Label htmlFor="judul">Judul Kontrak</Label>
                   <Input
-                    id="nomorKontrak"
-                    value={contractData.nomorKontrak}
+                    id="judul"
+                    value={contractData.judul}
+                    onChange={(e) => handleInputChange("judul", e.target.value)}
+                    placeholder="Masukkan judul kontrak kerja"
+                    disabled={isFieldDisabled()}
+                  />
+                </div>
+
+                <div className="grid md:grid-cols-2 gap-6">
+                  <div>
+                    <Label>Tanggal Mulai</Label>
+                    <Popover>
+                      <PopoverTrigger asChild>
+                        <Button
+                          variant="outline"
+                          className="w-full justify-start text-left font-normal"
+                          disabled={isFieldDisabled()}
+                        >
+                          <CalendarIcon className="mr-2 h-4 w-4" />
+                          {contractData.tanggalMulai
+                            ? format(contractData.tanggalMulai, "dd/MM/yyyy")
+                            : "Pilih tanggal"}
+                        </Button>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-auto p-0">
+                        <Calendar
+                          mode="single"
+                          selected={contractData.tanggalMulai}
+                          onSelect={(date) =>
+                            handleInputChange("tanggalMulai", date)
+                          }
+                        />
+                      </PopoverContent>
+                    </Popover>
+                  </div>
+                  <div>
+                    <Label>Tanggal Selesai</Label>
+                    <Popover>
+                      <PopoverTrigger asChild>
+                        <Button
+                          variant="outline"
+                          className="w-full justify-start text-left font-normal"
+                          disabled={isFieldDisabled()}
+                        >
+                          <CalendarIcon className="mr-2 h-4 w-4" />
+                          {contractData.tanggalSelesai
+                            ? format(contractData.tanggalSelesai, "dd/MM/yyyy")
+                            : "Pilih tanggal"}
+                        </Button>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-auto p-0">
+                        <Calendar
+                          mode="single"
+                          selected={contractData.tanggalSelesai}
+                          onSelect={(date) =>
+                            handleInputChange("tanggalSelesai", date)
+                          }
+                        />
+                      </PopoverContent>
+                    </Popover>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Step 2: Identitas Pegawai */}
+            {currentStep === 2 && (
+              <div className="space-y-6">
+                <div className="grid md:grid-cols-2 gap-6">
+                  <div>
+                    <Label htmlFor="namaLengkap">Nama Lengkap</Label>
+                    <Input
+                      id="namaLengkap"
+                      value={contractData.namaLengkap}
+                      onChange={(e) =>
+                        handleInputChange("namaLengkap", e.target.value)
+                      }
+                      placeholder="Nama lengkap pegawai"
+                      disabled={isFieldDisabled()}
+                    />
+                  </div>
+                </div>
+
+                <div className="grid md:grid-cols-2 gap-6">
+                  <div>
+                    <Label>Tanggal Lahir</Label>
+                    <Popover>
+                      <PopoverTrigger asChild>
+                        <Button
+                          variant="outline"
+                          className="w-full justify-start text-left font-normal"
+                          disabled={isFieldDisabled()}
+                        >
+                          <CalendarIcon className="mr-2 h-4 w-4" />
+                          {contractData.tanggalLahir
+                            ? format(contractData.tanggalLahir, "dd/MM/yyyy")
+                            : "Pilih tanggal lahir"}
+                        </Button>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-auto p-0">
+                        <Calendar
+                          mode="single"
+                          selected={contractData.tanggalLahir}
+                          onSelect={(date) =>
+                            handleInputChange("tanggalLahir", date)
+                          }
+                        />
+                      </PopoverContent>
+                    </Popover>
+                  </div>
+                  <div>
+                    <Label htmlFor="jenisKelamin">Jenis Kelamin</Label>
+                    <Select
+                      value={contractData.jenisKelamin}
+                      onValueChange={(value) =>
+                        handleInputChange("jenisKelamin", value)
+                      }
+                      disabled={isFieldDisabled()}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Pilih jenis kelamin" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="L">Laki-laki</SelectItem>
+                        <SelectItem value="P">Perempuan</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+
+                <div>
+                  <Label htmlFor="alamatLengkap">Alamat Lengkap</Label>
+                  <Textarea
+                    id="alamatLengkap"
+                    value={contractData.alamatLengkap}
                     onChange={(e) =>
-                      handleInputChange("nomorKontrak", e.target.value)
+                      handleInputChange("alamatLengkap", e.target.value)
                     }
-                    placeholder="Masukkan nomor kontrak kerja"
+                    rows={3}
+                    placeholder="Alamat lengkap pegawai"
+                    disabled={isFieldDisabled()}
+                  />
+                </div>
+
+                <div className="grid md:grid-cols-3 gap-6">
+                  <div>
+                    <Label htmlFor="nomorTelepon">Nomor Telepon</Label>
+                    <Input
+                      id="nomorTelepon"
+                      value={contractData.nomorTelepon}
+                      onChange={(e) =>
+                        handleInputChange("nomorTelepon", e.target.value)
+                      }
+                      placeholder="Nomor telepon"
+                      disabled={isFieldDisabled()}
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="email">Email</Label>
+                    <Input
+                      id="email"
+                      type="email"
+                      value={contractData.email}
+                      onChange={(e) =>
+                        handleInputChange("email", e.target.value)
+                      }
+                      placeholder="Email pegawai"
+                      disabled={isFieldDisabled()}
+                    />
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Step 3: Detail Pekerjaan */}
+            {currentStep === 3 && (
+              <div className="space-y-6">
+                <div className="grid md:grid-cols-2 gap-6">
+                  <div>
+                    <Label htmlFor="posisiJabatan">Posisi/Jabatan</Label>
+                    <Input
+                      id="posisiJabatan"
+                      value={contractData.posisiJabatan}
+                      onChange={(e) =>
+                        handleInputChange("posisiJabatan", e.target.value)
+                      }
+                      placeholder="Contoh: Software Developer"
+                      disabled={isFieldDisabled()}
+                    />
+                  </div>
+                </div>
+
+                <div className="grid md:grid-cols-2 gap-6">
+                  <div>
+                    <Label htmlFor="lokasiKerja">Lokasi Kerja</Label>
+                    <Input
+                      id="lokasiKerja"
+                      value={contractData.lokasiKerja}
+                      onChange={(e) =>
+                        handleInputChange("lokasiKerja", e.target.value)
+                      }
+                      placeholder="Contoh: Jakarta Selatan"
+                      disabled={isFieldDisabled()}
+                    />
+                  </div>
+                  <div>
+                    <Label>Tanggal Mulai Kerja</Label>
+                    <Popover>
+                      <PopoverTrigger asChild>
+                        <Button
+                          variant="outline"
+                          className="w-full justify-start text-left font-normal"
+                          disabled={isFieldDisabled()}
+                        >
+                          <CalendarIcon className="mr-2 h-4 w-4" />
+                          {contractData.tanggalMulaiKerja
+                            ? format(
+                                contractData.tanggalMulaiKerja,
+                                "dd/MM/yyyy"
+                              )
+                            : "Pilih tanggal mulai kerja"}
+                        </Button>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-auto p-0">
+                        <Calendar
+                          mode="single"
+                          selected={contractData.tanggalMulaiKerja}
+                          onSelect={(date) =>
+                            handleInputChange("tanggalMulaiKerja", date)
+                          }
+                        />
+                      </PopoverContent>
+                    </Popover>
+                  </div>
+                </div>
+
+                <div className="grid md:grid-cols-2 gap-6">
+                  <div>
+                    <Label htmlFor="jenisKontrak">Jenis Kontrak</Label>
+                    <Select
+                      value={contractData.jenisKontrak}
+                      onValueChange={(value) =>
+                        handleInputChange("jenisKontrak", value)
+                      }
+                      disabled={isFieldDisabled()}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Pilih jenis kontrak" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="PKWTT">
+                          PKWTT (Kontrak Tidak Terbatas)
+                        </SelectItem>
+                        <SelectItem value="PKWT">
+                          PKWT (Kontrak Waktu Tertentu)
+                        </SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div>
+                    <Label htmlFor="hariCuti">Banyak Hari Cuti</Label>
+                    <Input
+                      id="hariCuti"
+                      value={contractData.hariCuti}
+                      onChange={(e) =>
+                        handleInputChange("hariCuti", e.target.value)
+                      }
+                      placeholder="Contoh: 12"
+                      disabled={isFieldDisabled()}
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <Label htmlFor="deskripsiPekerjaan">
+                    Deskripsi Pekerjaan
+                  </Label>
+                  <Textarea
+                    id="deskripsiPekerjaan"
+                    value={contractData.deskripsiPekerjaan}
+                    onChange={(e) =>
+                      handleInputChange("deskripsiPekerjaan", e.target.value)
+                    }
+                    rows={5}
+                    placeholder="Jelaskan secara detail tanggung jawab dan tugas pekerjaan..."
                     disabled={isFieldDisabled()}
                   />
                 </div>
                 <div>
-                  <Label htmlFor="jenis">Jenis Kontrak</Label>
-                  <Select
-                    value={contractData.jenis}
-                    onValueChange={(value) => handleInputChange("jenis", value)}
+                  <Label htmlFor="detailCuti">Detail Cuti</Label>
+                  <Textarea
+                    id="detailCuti"
+                    value={contractData.detailCuti}
+                    onChange={(e) =>
+                      handleInputChange("detailCuti", e.target.value)
+                    }
+                    rows={5}
+                    placeholder="Jika ada cuti khusus jelaskan detailnya"
                     disabled={isFieldDisabled()}
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="aturanLembur">Aturan Lembur</Label>
+                  <Textarea
+                    id="aturanLembur"
+                    value={contractData.aturanLembur}
+                    onChange={(e) =>
+                      handleInputChange("aturanLembur", e.target.value)
+                    }
+                    rows={5}
+                    placeholder="Jelaskan secara detail aturan lembur"
+                    disabled={isFieldDisabled()}
+                  />
+                </div>
+              </div>
+            )}
+
+            {/* Step 4: Jam Kerja & Waktu */}
+            {currentStep === 4 && (
+              <div className="space-y-6">
+                <div className="grid md:grid-cols-3 gap-6">
+                  <div>
+                    <Label htmlFor="gajiPokok">Gaji Pokok</Label>
+                    <Input
+                      id="gajiPokok"
+                      value={contractData.gajiPokok}
+                      onChange={(e) =>
+                        handleInputChange("gajiPokok", e.target.value)
+                      }
+                      placeholder="Contoh: 8000000"
+                      disabled={isFieldDisabled()}
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="tunjanganTetap">Tunjangan Tetap</Label>
+                    <Input
+                      id="tunjanganTetap"
+                      value={contractData.tunjanganTetap}
+                      onChange={(e) =>
+                        handleInputChange("tunjanganTetap", e.target.value)
+                      }
+                      placeholder="Contoh: 1000000"
+                      disabled={isFieldDisabled()}
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="tunjanganTidakTetap">
+                      Tunjangan Tidak Tetap
+                    </Label>
+                    <Input
+                      id="tunjanganTidakTetap"
+                      value={contractData.tunjanganTidakTetap}
+                      onChange={(e) =>
+                        handleInputChange("tunjanganTidakTetap", e.target.value)
+                      }
+                      placeholder="Contoh: 1000000"
+                      disabled={isFieldDisabled()}
+                    />
+                  </div>
+                </div>
+
+                <div className="grid md:grid-cols-1 gap-6">
+                  <div>
+                    <Label htmlFor="jaminanSosial">Jaminan Sosial</Label>
+                    <Input
+                      id="jaminanSosial"
+                      value={contractData.jaminanSosial}
+                      onChange={(e) =>
+                        handleInputChange("jaminanSosial", e.target.value)
+                      }
+                      placeholder="Jelaskan dengan detail jaminan sosial yang diberikan"
+                      disabled={isFieldDisabled()}
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="fasilitasLain">
+                      Fasilitas Pendukung Lain
+                    </Label>
+                    <Input
+                      id="fasilitasLain"
+                      value={contractData.fasilitasLain}
+                      onChange={(e) =>
+                        handleInputChange("fasilitasLain", e.target.value)
+                      }
+                      placeholder="Jelaskan fasilitas pendukung yang disediakan perusahaan untuk pegawai"
+                      disabled={isFieldDisabled()}
+                    />
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Step 5: Kompensasi & Tunjangan */}
+            {currentStep === 5 && (
+              <div className="space-y-6">
+                <div className="grid md:grid-cols-1 gap-6">
+                  <div>
+                    <Label htmlFor="hukumDanRahasia">
+                      Perlindungan Hukum dan Kerahasiaan
+                    </Label>
+                    <Input
+                      id="hukumDanRahasia"
+                      value={contractData.hukumDanRahasia}
+                      onChange={(e) =>
+                        handleInputChange("hukumDanRahasia", e.target.value)
+                      }
+                      placeholder="Jelaskan hak perlindungan hukum dan kerahasiaan data perusahaan"
+                      disabled={isFieldDisabled()}
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="disiplin">Disiplin</Label>
+                    <Input
+                      id="disiplin"
+                      value={contractData.disiplin}
+                      onChange={(e) =>
+                        handleInputChange("disiplin", e.target.value)
+                      }
+                      placeholder="Jelaskan kepatuhan terhadap tata terteb, kebijakan perusahaan, dan lainnya"
+                      disabled={isFieldDisabled()}
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <Label htmlFor="sanksi">Sanksi</Label>
+                  <Textarea
+                    id="sanksi"
+                    value={contractData.sanksi}
+                    onChange={(e) =>
+                      handleInputChange("sanksi", e.target.value)
+                    }
+                    rows={3}
+                    placeholder="Jelaskan sanksi atau hukuman yang diterapkan apabila pegawai melanggar aturan kerja"
+                    disabled={isFieldDisabled()}
+                  />
+                </div>
+
+                <div className="grid md:grid-cols-1 gap-6">
+                  <div>
+                    <Label htmlFor="pemutusanHubunganKerja">
+                      Pemutusan Hubungan Kerja
+                    </Label>
+                    <Input
+                      id="pemutusanHubunganKerja"
+                      value={contractData.pemutusanHubunganKerja}
+                      onChange={(e) =>
+                        handleInputChange(
+                          "pemutusanHubunganKerja",
+                          e.target.value
+                        )
+                      }
+                      placeholder="Jelaskan ketentuan pemutusan hubungan kerja"
+                      disabled={isFieldDisabled()}
+                    />
+                  </div>
+                </div>
+              </div>
+            )}
+            {/* Preview Contract Section - Only show on last step */}
+            {currentStep === steps.length - 1 && (
+              <div className="mt-8 pt-6 border-t">
+                <PreviewContract
+                  contractType="employment"
+                  contractData={contractData}
+                  onSave={() => {
+                    // Optional: Add any save logic here
+                    console.log("Employment contract saved/generated");
+                  }}
+                />
+              </div>
+            )}
+
+            {/* Navigation Buttons */}
+            <div className="flex justify-between mt-8 pt-6 border-t border-gray-100">
+              <Button
+                variant="outline"
+                onClick={prevStep}
+                disabled={currentStep === 0}
+                className="px-6 py-2 border-gray-300 text-gray-600 hover:bg-gray-50"
+              >
+                ← Sebelumnya
+              </Button>
+
+              <div className="flex gap-3">
+                {currentStep === steps.length - 1 ? (
+                  <Button
+                    onClick={handleGenerateContract}
+                    disabled={isGenerating}
+                    className="px-6 py-2 bg-blue-600 hover:bg-blue-700 text-white"
                   >
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="EMPLOYMENT">Employment</SelectItem>
-                      <SelectItem value="FREELANCE">Freelance</SelectItem>
-                      <SelectItem value="INTERNSHIP">Internship</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-              </div>
-
-              <div>
-                <Label htmlFor="judul">Judul Kontrak</Label>
-                <Input
-                  id="judul"
-                  value={contractData.judul}
-                  onChange={(e) => handleInputChange("judul", e.target.value)}
-                  placeholder="Masukkan judul kontrak kerja"
-                  disabled={isFieldDisabled()}
-                />
-              </div>
-
-              <div className="grid md:grid-cols-2 gap-6">
-                <div>
-                  <Label>Tanggal Mulai</Label>
-                  <Popover>
-                    <PopoverTrigger asChild>
-                      <Button
-                        variant="outline"
-                        className="w-full justify-start text-left font-normal"
-                        disabled={isFieldDisabled()}
-                      >
-                        <CalendarIcon className="mr-2 h-4 w-4" />
-                        {contractData.tanggalMulai
-                          ? format(contractData.tanggalMulai, "dd/MM/yyyy")
-                          : "Pilih tanggal"}
-                      </Button>
-                    </PopoverTrigger>
-                    <PopoverContent className="w-auto p-0">
-                      <Calendar
-                        mode="single"
-                        selected={contractData.tanggalMulai}
-                        onSelect={(date) =>
-                          handleInputChange("tanggalMulai", date)
-                        }
-                      />
-                    </PopoverContent>
-                  </Popover>
-                </div>
-                <div>
-                  <Label>Tanggal Selesai</Label>
-                  <Popover>
-                    <PopoverTrigger asChild>
-                      <Button
-                        variant="outline"
-                        className="w-full justify-start text-left font-normal"
-                        disabled={isFieldDisabled()}
-                      >
-                        <CalendarIcon className="mr-2 h-4 w-4" />
-                        {contractData.tanggalSelesai
-                          ? format(contractData.tanggalSelesai, "dd/MM/yyyy")
-                          : "Pilih tanggal"}
-                      </Button>
-                    </PopoverTrigger>
-                    <PopoverContent className="w-auto p-0">
-                      <Calendar
-                        mode="single"
-                        selected={contractData.tanggalSelesai}
-                        onSelect={(date) =>
-                          handleInputChange("tanggalSelesai", date)
-                        }
-                      />
-                    </PopoverContent>
-                  </Popover>
-                </div>
-              </div>
-            </div>
-          )}
-
-          {/* Step 2: Identitas Pegawai */}
-          {currentStep === 2 && (
-            <div className="space-y-6">
-              <div className="grid md:grid-cols-2 gap-6">
-                <div>
-                  <Label htmlFor="namaLengkap">Nama Lengkap</Label>
-                  <Input
-                    id="namaLengkap"
-                    value={contractData.namaLengkap}
-                    onChange={(e) =>
-                      handleInputChange("namaLengkap", e.target.value)
+                    {isGenerating
+                      ? "Membuat Kontrak..."
+                      : "💾 Simpan ke Database"}
+                  </Button>
+                ) : (
+                  <Button
+                    onClick={nextStep}
+                    disabled={
+                      currentStep === 0 &&
+                      (!inputMethod ||
+                        (inputMethod === "upload" && !uploadedFile))
                     }
-                    placeholder="Nama lengkap pegawai"
-                    disabled={isFieldDisabled()}
-                  />
-                </div>
-              </div>
-
-              <div className="grid md:grid-cols-2 gap-6">
-                <div>
-                  <Label>Tanggal Lahir</Label>
-                  <Popover>
-                    <PopoverTrigger asChild>
-                      <Button
-                        variant="outline"
-                        className="w-full justify-start text-left font-normal"
-                        disabled={isFieldDisabled()}
-                      >
-                        <CalendarIcon className="mr-2 h-4 w-4" />
-                        {contractData.tanggalLahir
-                          ? format(contractData.tanggalLahir, "dd/MM/yyyy")
-                          : "Pilih tanggal lahir"}
-                      </Button>
-                    </PopoverTrigger>
-                    <PopoverContent className="w-auto p-0">
-                      <Calendar
-                        mode="single"
-                        selected={contractData.tanggalLahir}
-                        onSelect={(date) =>
-                          handleInputChange("tanggalLahir", date)
-                        }
-                      />
-                    </PopoverContent>
-                  </Popover>
-                </div>
-                <div>
-                  <Label htmlFor="jenisKelamin">Jenis Kelamin</Label>
-                  <Select
-                    value={contractData.jenisKelamin}
-                    onValueChange={(value) =>
-                      handleInputChange("jenisKelamin", value)
-                    }
-                    disabled={isFieldDisabled()}
+                    className="px-6 py-2 bg-blue-600 hover:bg-blue-700 text-white"
                   >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Pilih jenis kelamin" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="L">Laki-laki</SelectItem>
-                      <SelectItem value="P">Perempuan</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-              </div>
-
-              <div>
-                <Label htmlFor="alamatLengkap">Alamat Lengkap</Label>
-                <Textarea
-                  id="alamatLengkap"
-                  value={contractData.alamatLengkap}
-                  onChange={(e) =>
-                    handleInputChange("alamatLengkap", e.target.value)
-                  }
-                  rows={3}
-                  placeholder="Alamat lengkap pegawai"
-                  disabled={isFieldDisabled()}
-                />
-              </div>
-
-              <div className="grid md:grid-cols-3 gap-6">
-                <div>
-                  <Label htmlFor="nomorTelepon">Nomor Telepon</Label>
-                  <Input
-                    id="nomorTelepon"
-                    value={contractData.nomorTelepon}
-                    onChange={(e) =>
-                      handleInputChange("nomorTelepon", e.target.value)
-                    }
-                    placeholder="Nomor telepon"
-                    disabled={isFieldDisabled()}
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="email">Email</Label>
-                  <Input
-                    id="email"
-                    type="email"
-                    value={contractData.email}
-                    onChange={(e) => handleInputChange("email", e.target.value)}
-                    placeholder="Email pegawai"
-                    disabled={isFieldDisabled()}
-                  />
-                </div>
+                    Selanjutnya →
+                  </Button>
+                )}
               </div>
             </div>
-          )}
-
-          {/* Step 3: Detail Pekerjaan */}
-          {currentStep === 3 && (
-            <div className="space-y-6">
-              <div className="grid md:grid-cols-2 gap-6">
-                <div>
-                  <Label htmlFor="posisiJabatan">Posisi/Jabatan</Label>
-                  <Input
-                    id="posisiJabatan"
-                    value={contractData.posisiJabatan}
-                    onChange={(e) =>
-                      handleInputChange("posisiJabatan", e.target.value)
-                    }
-                    placeholder="Contoh: Software Developer"
-                    disabled={isFieldDisabled()}
-                  />
-                </div>
-              </div>
-
-              <div className="grid md:grid-cols-2 gap-6">
-                <div>
-                  <Label htmlFor="lokasiKerja">Lokasi Kerja</Label>
-                  <Input
-                    id="lokasiKerja"
-                    value={contractData.lokasiKerja}
-                    onChange={(e) =>
-                      handleInputChange("lokasiKerja", e.target.value)
-                    }
-                    placeholder="Contoh: Jakarta Selatan"
-                    disabled={isFieldDisabled()}
-                  />
-                </div>
-                <div>
-                  <Label>Tanggal Mulai Kerja</Label>
-                  <Popover>
-                    <PopoverTrigger asChild>
-                      <Button
-                        variant="outline"
-                        className="w-full justify-start text-left font-normal"
-                        disabled={isFieldDisabled()}
-                      >
-                        <CalendarIcon className="mr-2 h-4 w-4" />
-                        {contractData.tanggalMulaiKerja
-                          ? format(contractData.tanggalMulaiKerja, "dd/MM/yyyy")
-                          : "Pilih tanggal mulai kerja"}
-                      </Button>
-                    </PopoverTrigger>
-                    <PopoverContent className="w-auto p-0">
-                      <Calendar
-                        mode="single"
-                        selected={contractData.tanggalMulaiKerja}
-                        onSelect={(date) =>
-                          handleInputChange("tanggalMulaiKerja", date)
-                        }
-                      />
-                    </PopoverContent>
-                  </Popover>
-                </div>
-              </div>
-
-              <div className="grid md:grid-cols-2 gap-6">
-                <div>
-                  <Label htmlFor="jenisKontrak">Jenis Kontrak</Label>
-                  <Select
-                    value={contractData.jenisKontrak}
-                    onValueChange={(value) =>
-                      handleInputChange("jenisKontrak", value)
-                    }
-                    disabled={isFieldDisabled()}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Pilih jenis kontrak" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="PKWTT">
-                        PKWTT (Kontrak Tidak Terbatas)
-                      </SelectItem>
-                      <SelectItem value="PKWT">
-                        PKWT (Kontrak Waktu Tertentu)
-                      </SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div>
-                  <Label htmlFor="hariCuti">Banyak Hari Cuti</Label>
-                  <Input
-                    id="hariCuti"
-                    value={contractData.hariCuti}
-                    onChange={(e) =>
-                      handleInputChange("hariCuti", e.target.value)
-                    }
-                    placeholder="Contoh: 12"
-                    disabled={isFieldDisabled()}
-                  />
-                </div>
-              </div>
-
-              <div>
-                <Label htmlFor="deskripsiPekerjaan">Deskripsi Pekerjaan</Label>
-                <Textarea
-                  id="deskripsiPekerjaan"
-                  value={contractData.deskripsiPekerjaan}
-                  onChange={(e) =>
-                    handleInputChange("deskripsiPekerjaan", e.target.value)
-                  }
-                  rows={5}
-                  placeholder="Jelaskan secara detail tanggung jawab dan tugas pekerjaan..."
-                  disabled={isFieldDisabled()}
-                />
-              </div>
-              <div>
-                <Label htmlFor="detailCuti">Detail Cuti</Label>
-                <Textarea
-                  id="detailCuti"
-                  value={contractData.detailCuti}
-                  onChange={(e) =>
-                    handleInputChange("detailCuti", e.target.value)
-                  }
-                  rows={5}
-                  placeholder="Jika ada cuti khusus jelaskan detailnya"
-                  disabled={isFieldDisabled()}
-                />
-              </div>
-              <div>
-                <Label htmlFor="aturanLembur">Aturan Lembur</Label>
-                <Textarea
-                  id="aturanLembur"
-                  value={contractData.aturanLembur}
-                  onChange={(e) =>
-                    handleInputChange("aturanLembur", e.target.value)
-                  }
-                  rows={5}
-                  placeholder="Jelaskan secara detail aturan lembur"
-                  disabled={isFieldDisabled()}
-                />
-              </div>
-            </div>
-          )}
-
-          {/* Step 4: Jam Kerja & Waktu */}
-          {currentStep === 4 && (
-            <div className="space-y-6">
-              <div className="grid md:grid-cols-3 gap-6">
-                <div>
-                  <Label htmlFor="gajiPokok">Gaji Pokok</Label>
-                  <Input
-                    id="gajiPokok"
-                    value={contractData.gajiPokok}
-                    onChange={(e) =>
-                      handleInputChange("gajiPokok", e.target.value)
-                    }
-                    placeholder="Contoh: 8000000"
-                    disabled={isFieldDisabled()}
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="tunjanganTetap">Tunjangan Tetap</Label>
-                  <Input
-                    id="tunjanganTetap"
-                    value={contractData.tunjanganTetap}
-                    onChange={(e) =>
-                      handleInputChange("tunjanganTetap", e.target.value)
-                    }
-                    placeholder="Contoh: 1000000"
-                    disabled={isFieldDisabled()}
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="tunjanganTidakTetap">
-                    Tunjangan Tidak Tetap
-                  </Label>
-                  <Input
-                    id="tunjanganTidakTetap"
-                    value={contractData.tunjanganTidakTetap}
-                    onChange={(e) =>
-                      handleInputChange("tunjanganTidakTetap", e.target.value)
-                    }
-                    placeholder="Contoh: 1000000"
-                    disabled={isFieldDisabled()}
-                  />
-                </div>
-              </div>
-
-              <div className="grid md:grid-cols-1 gap-6">
-                <div>
-                  <Label htmlFor="jaminanSosial">Jaminan Sosial</Label>
-                  <Input
-                    id="jaminanSosial"
-                    value={contractData.jaminanSosial}
-                    onChange={(e) =>
-                      handleInputChange("jaminanSosial", e.target.value)
-                    }
-                    placeholder="Jelaskan dengan detail jaminan sosial yang diberikan"
-                    disabled={isFieldDisabled()}
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="fasilitasLain">
-                    Fasilitas Pendukung Lain
-                  </Label>
-                  <Input
-                    id="fasilitasLain"
-                    value={contractData.fasilitasLain}
-                    onChange={(e) =>
-                      handleInputChange("fasilitasLain", e.target.value)
-                    }
-                    placeholder="Jelaskan fasilitas pendukung yang disediakan perusahaan untuk pegawai"
-                    disabled={isFieldDisabled()}
-                  />
-                </div>
-              </div>
-            </div>
-          )}
-
-          {/* Step 5: Kompensasi & Tunjangan */}
-          {currentStep === 5 && (
-            <div className="space-y-6">
-              <div className="grid md:grid-cols-1 gap-6">
-                <div>
-                  <Label htmlFor="hukumDanRahasia">
-                    Perlindungan Hukum dan Kerahasiaan
-                  </Label>
-                  <Input
-                    id="hukumDanRahasia"
-                    value={contractData.hukumDanRahasia}
-                    onChange={(e) =>
-                      handleInputChange("hukumDanRahasia", e.target.value)
-                    }
-                    placeholder="Jelaskan hak perlindungan hukum dan kerahasiaan data perusahaan"
-                    disabled={isFieldDisabled()}
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="disiplin">Disiplin</Label>
-                  <Input
-                    id="disiplin"
-                    value={contractData.disiplin}
-                    onChange={(e) =>
-                      handleInputChange("disiplin", e.target.value)
-                    }
-                    placeholder="Jelaskan kepatuhan terhadap tata terteb, kebijakan perusahaan, dan lainnya"
-                    disabled={isFieldDisabled()}
-                  />
-                </div>
-              </div>
-
-              <div>
-                <Label htmlFor="sanksi">Sanksi</Label>
-                <Textarea
-                  id="sanksi"
-                  value={contractData.sanksi}
-                  onChange={(e) => handleInputChange("sanksi", e.target.value)}
-                  rows={3}
-                  placeholder="Jelaskan sanksi atau hukuman yang diterapkan apabila pegawai melanggar aturan kerja"
-                  disabled={isFieldDisabled()}
-                />
-              </div>
-
-              <div className="grid md:grid-cols-1 gap-6">
-                <div>
-                  <Label htmlFor="pemutusanHubunganKerja">
-                    Pemutusan Hubungan Kerja
-                  </Label>
-                  <Input
-                    id="pemutusanHubunganKerja"
-                    value={contractData.pemutusanHubunganKerja}
-                    onChange={(e) =>
-                      handleInputChange(
-                        "pemutusanHubunganKerja",
-                        e.target.value
-                      )
-                    }
-                    placeholder="Jelaskan ketentuan pemutusan hubungan kerja"
-                    disabled={isFieldDisabled()}
-                  />
-                </div>
-              </div>
-            </div>
-          )}
-          {/* Preview Contract Section - Only show on last step */}
-          {currentStep === steps.length - 1 && (
-            <div className="mt-8 pt-6 border-t">
-              <PreviewContract 
-                contractType="employment" 
-                contractData={contractData}
-                onSave={() => {
-                  // Optional: Add any save logic here
-                  console.log('Employment contract saved/generated');
-                }}
-              />
-            </div>
-          )}
-
-          {/* Navigation Buttons */}
-          <div className="flex justify-between mt-8 pt-6 border-t border-gray-100">
-            <Button
-              variant="outline"
-              onClick={prevStep}
-              disabled={currentStep === 0}
-              className="px-6 py-2 border-gray-300 text-gray-600 hover:bg-gray-50"
-            >
-              ← Sebelumnya
-            </Button>
-
-            <div className="flex gap-3">
-              {currentStep === steps.length - 1 ? (
-                <Button
-                  onClick={handleGenerateContract}
-                  disabled={isGenerating}
-                  className="px-6 py-2 bg-blue-600 hover:bg-blue-700 text-white"
-                >
-                  {isGenerating
-                    ? "Membuat Kontrak..."
-                    : "💾 Simpan ke Database"}
-                </Button>
-              ) : (
-                <Button
-                  onClick={nextStep}
-                  disabled={
-                    currentStep === 0 &&
-                    (!inputMethod ||
-                      (inputMethod === "upload" && !uploadedFile))
-                  }
-                  className="px-6 py-2 bg-blue-600 hover:bg-blue-700 text-white"
-                >
-                  Selanjutnya →
-                </Button>
-              )}
-            </div>
-          </div>
-        </CardContent>
-      </Card>
+          </CardContent>
+        </Card>
       </div>
     </div>
   );

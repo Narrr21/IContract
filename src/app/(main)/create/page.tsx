@@ -124,6 +124,10 @@ export default function CreateContractPage() {
   const [selectedInputMethod, setSelectedInputMethod] =
     useState<InputMethod | null>(null);
   const [uploadedFile, setUploadedFile] = useState<File | null>(null);
+  // Server-side stored uploaded file name (uploaded-<ts>-original.pdf) returned by /api/upload-pdf
+  const [uploadedServerFileName, setUploadedServerFileName] = useState<
+    string | null
+  >(null);
   const [isScanning, setIsScanning] = useState(false);
   const [scanProgress, setScanProgress] = useState(0);
   const [scanError, setScanError] = useState<string | null>(null);
@@ -131,6 +135,8 @@ export default function CreateContractPage() {
   const [extractedEmploymentData, setExtractedEmploymentData] =
     useState<EmploymentContractData | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  // NEW: control when we switch from selection/upload (or scanning) UI to the actual form page
+  const [proceedToForm, setProceedToForm] = useState(false);
 
   const handleFileUpload = async (
     event: React.ChangeEvent<HTMLInputElement>
@@ -231,15 +237,16 @@ export default function CreateContractPage() {
       }
 
       const uploadData = await uploadResponse.json();
-      const uploadedFileName = uploadData.fileName;
-
-      console.log(`📄 File uploaded as: ${uploadedFileName}`);
+      const uploadedFileName =
+        uploadData.uploadedFileName || uploadData.fileName;
+      setUploadedServerFileName(uploadedFileName);
+      console.log(`📄 File uploaded as (server name): ${uploadedFileName}`);
 
       // Step 2: Extract text using the same API as review page
       const extractResponse = await fetch("/api/extract-text", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ fileName: uploadedFileName }),
+        body: JSON.stringify({ fileName: "contract/" + uploadedFileName }),
       });
 
       if (!extractResponse.ok) {
@@ -848,11 +855,8 @@ export default function CreateContractPage() {
     }
   };
   // Jika belum memilih tipe kontrak atau metode input, atau sedang upload, tampilkan pilihan
-  if (
-    !selectedContractType ||
-    !selectedInputMethod ||
-    (selectedInputMethod === "upload" && !uploadedFile)
-  ) {
+  // Phase 1 UI (selection + upload + scanning + processed preview) stays until user clicks proceed button
+  if (!selectedContractType || !selectedInputMethod || !proceedToForm) {
     return (
       <div className="relative min-h-screen">
         {/* Background layer */}
@@ -864,7 +868,7 @@ export default function CreateContractPage() {
         {/* <div className="absolute inset-0 -z-10 bg-white/70 backdrop-blur-sm" /> */}
         <div className="container mx-auto p-6 max-w-4xl">
           {/* Step 1: Pilih Tipe Kontrak */}
-          {!(selectedContractType && selectedInputMethod) && (
+          {(!selectedContractType || !selectedInputMethod) && (
             <Card>
               <CardContent>
                 <div className="mb-6">
@@ -1149,10 +1153,7 @@ export default function CreateContractPage() {
                     {uploadedFile && (
                       <Button
                         size="sm"
-                        onClick={() => {
-                          // File sudah ter-upload, form akan render otomatis
-                          // karena kondisi (selectedInputMethod === 'manual' || uploadedFile) sudah terpenuhi
-                        }}
+                        onClick={() => setProceedToForm(true)}
                         className="bg-green-600 hover:bg-green-700"
                       >
                         Lanjut ke Form →
@@ -1190,6 +1191,7 @@ export default function CreateContractPage() {
                         onClick={() => {
                           setSelectedContractType(null);
                           setSelectedInputMethod(null);
+                          setProceedToForm(false);
                         }}
                       >
                         Mulai Ulang
@@ -1197,6 +1199,7 @@ export default function CreateContractPage() {
                       <Button
                         size="sm"
                         className="bg-blue-600 hover:bg-blue-700"
+                        onClick={() => setProceedToForm(true)}
                       >
                         Mulai Mengisi Form →
                       </Button>
@@ -1213,6 +1216,7 @@ export default function CreateContractPage() {
 
   // Jika sudah memilih tipe kontrak dan metode input, tampilkan form yang sesuai
   if (
+    proceedToForm &&
     selectedContractType === "partnership" &&
     selectedInputMethod &&
     (selectedInputMethod === "manual" || uploadedFile)
@@ -1234,6 +1238,7 @@ export default function CreateContractPage() {
               setScanProgress(0);
               setScanError(null);
               setExtractedData(null);
+              setProceedToForm(false);
             }}
             className="mb-4"
           >
@@ -1244,6 +1249,7 @@ export default function CreateContractPage() {
           initialInputMethod={selectedInputMethod}
           initialFile={uploadedFile}
           initialExtractedData={extractedData} // Pass the AI-extracted data
+          uploadedServerFileName={uploadedServerFileName || undefined}
           onReset={() => {
             setSelectedContractType(null);
             setSelectedInputMethod(null);
@@ -1251,6 +1257,7 @@ export default function CreateContractPage() {
             setExtractedData(null);
             setScanError(null);
             setScanProgress(0);
+            setProceedToForm(false);
           }}
         />
       </div>
@@ -1258,6 +1265,7 @@ export default function CreateContractPage() {
   }
 
   if (
+    proceedToForm &&
     selectedContractType === "employment" &&
     selectedInputMethod &&
     (selectedInputMethod === "manual" || uploadedFile)
@@ -1280,6 +1288,7 @@ export default function CreateContractPage() {
               setScanError(null);
               setExtractedData(null);
               setExtractedEmploymentData(null);
+              setProceedToForm(false);
             }}
             className="mb-4"
           >
@@ -1290,6 +1299,7 @@ export default function CreateContractPage() {
           initialInputMethod={selectedInputMethod}
           initialFile={uploadedFile}
           initialExtractedData={extractedEmploymentData} // Pass the AI-extracted data
+          uploadedServerFileName={uploadedServerFileName || undefined}
           onReset={() => {
             setSelectedContractType(null);
             setSelectedInputMethod(null);
@@ -1298,6 +1308,7 @@ export default function CreateContractPage() {
             setExtractedEmploymentData(null);
             setScanError(null);
             setScanProgress(0);
+            setProceedToForm(false);
           }}
         />
       </div>
